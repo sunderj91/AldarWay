@@ -72,6 +72,20 @@ ul.clean{margin:6px 0 6px 20px}ul.clean li{margin:5px 0}
 .btn{font-family:inherit;background:var(--grad-primary);color:#fff;border:none;border-radius:var(--r-pill);padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer}
 .chain code{word-break:break-all}
 .chain pre{white-space:pre-wrap;word-break:break-all}
+#fcStudio{display:none}
+#fcStudio.on{display:flex}
+.fcside{width:270px;flex:none;background:#fff;border:1px solid var(--line);border-radius:var(--r-md);padding:14px;position:sticky;top:74px;align-self:flex-start;max-height:calc(100vh - 95px);overflow:auto;box-shadow:var(--shadow-sm)}
+.fcmain{flex:1;min-width:0;background:#fff;border:1px solid var(--line);border-radius:var(--r-md);padding:14px;box-shadow:var(--shadow-sm)}
+@media (max-width:900px){#fcStudio.on{flex-direction:column}.fcside{position:static;width:100%;max-height:none}}
+#fcView{height:68vh;overflow:auto;border:1px solid var(--line);border-radius:var(--r-sm);background:#f2f3f5}
+.fczoom{display:flex;align-items:center;gap:4px;background:var(--bg-ink);border-radius:var(--r-pill);padding:4px 8px}
+.fczoom button{font-family:inherit;background:transparent;color:#fff;border:none;font-size:15px;font-weight:800;width:28px;height:24px;cursor:pointer;border-radius:6px}
+.fczoom button:hover{background:rgba(255,255,255,.15)}
+.fczoom #fcZoomFit,.fczoom #fcZoom100{width:auto;font-size:11.5px;padding:0 8px}
+.fczoom span{color:var(--accent-sky);font-size:11.5px;font-weight:700;min-width:40px;text-align:center}
+.fcmark{position:absolute;transform:translate(-50%,-50%);background:rgba(28,28,40,.88);color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:8px;white-space:nowrap;cursor:pointer;border:1px solid rgba(255,255,255,.25);line-height:1.3}
+.fcmark:hover{background:var(--err)}
+.fcmark::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:5px solid transparent;border-top-color:rgba(28,28,40,.88)}
 .subtab{display:none}.subtab.active{display:block}
 .chips button{font-family:inherit;padding:5px 13px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:600;cursor:pointer;margin:2px 3px 2px 0}
 .chips button.on{background:var(--grad-primary);color:#fff;border-color:transparent}
@@ -95,8 +109,9 @@ ul.clean{margin:6px 0 6px 20px}ul.clean li{margin:5px 0}
   <button class="active" data-tab="standard">01 · Naming Standard</button>
   <button data-tab="generator">02 · Structure Generator</button>
   <button data-tab="renamer">03 · Renamer</button>
-  <button data-tab="validator">04 · Validator</button>
-  <button data-tab="checklist">05 · PM Checklist</button>
+  <button data-tab="csvmaker">04 · Floorplan CSV</button>
+  <button data-tab="validator">05 · Validator</button>
+  <button data-tab="checklist">06 · PM Checklist</button>
 </nav>
 <main>
 
@@ -118,7 +133,7 @@ ul.clean{margin:6px 0 6px 20px}ul.clean li{margin:5px 0}
     <tr><td>3</td><td><b>Floorplate</b> — top-down plate of that floor</td><td><code>backplate_image_tower-floorplate/[tower]/</code> + unit SVG masks (<b>path id = unit code</b>, e.g. <code>b1-06-09</code>)</td><td>click a unit</td></tr>
     <tr><td>4</td><td><b>Unit resolution</b> (invisible)</td><td>Server unit data / stacking plan maps <code>b1-06-09</code> → variation code <code>a_s_2bf_a1</code>. Every asset below loads by that code.</td><td>—</td></tr>
     <tr><td>5</td><td><b>Unit floorplan</b> — plan with clickable room labels</td><td><code>backplate_image_floorplan_[vcode-no-f]_[scheme]_[floor].webp</code> + <code>csv_floorplan</code> labels (auto-flipped if the unit is mirrored)</td><td>click a room label</td></tr>
-    <tr><td>6</td><td><b>360 tour</b> — inside the room</td><td><code>csv_camera</code> row (lowest index) → <code>image_360_…_[Room]_[n].jpg</code> projected on <code>model_360-collision</code>; in-scene arrows jump between cameras</td><td>arrows / floorplan to move</td></tr>
+    <tr><td>6</td><td><b>360 tour</b> — inside the room</td><td><code>csv_camera</code> row (lowest index) → <code>image_360_…_[Room]_[n].jpg</code> projected on <code>model_360-collision</code>; in-scene arrows jump between cameras. <b>Pressing Enter/Tour lands on the <code>Foyer</code> camera</b> — every unit needs one or the entry room is random</td><td>arrows / floorplan to move</td></tr>
     <tr><td>7</td><td><b>Scheme &amp; furniture toggles</b></td><td>Scheme switch swaps the <code>s1</code>/<code>s2</code> asset set (e.g. light vs dark interior theme); <code>s3</code> is the unfurnished convention — each scheme needs its own full 360 set + floorplan backplate; CSVs/GLBs are shared</td><td>—</td></tr>
   </table>
   <div class="card chain" style="background:var(--bg-ink);color:#DDE7FF">
@@ -169,6 +184,7 @@ ul.clean{margin:6px 0 6px 20px}ul.clean li{margin:5px 0}
     <tr><td>Navigation arrows float mid-air or sit inside walls</td><td>Camera positions in metres instead of cm, or origin doesn't match the collision GLB</td><td>Positions ×100 in collision-model space</td><td><code>Q4</code></td></tr>
     <tr><td>Wrong floorplan appears for a unit</td><td>Stacking plan maps the unit code to the wrong variation</td><td>Fix unit → variation mapping in unit data</td><td>manual</td></tr>
     <tr><td>Mirrored unit's labels sit on the wrong side</td><td>Floorplan CSV was pre-flipped by hand — the app flips it again</td><td>Always deliver the unflipped CSV</td><td><code>N7</code></td></tr>
+    <tr><td>Tour opens in a random room instead of the entrance</td><td>No <code>Foyer</code>/<code>Entrance</code> camera + 360 — the app enters the tour at the Foyer; without it the landing room is arbitrary</td><td>Every unit type needs a Foyer set; its index 1 is the entry view</td><td><code>X12</code></td></tr>
     <tr><td>Some units open with no tour at all</td><td>Unit type missing from deployment, or unit absent from the stacking plan</td><td>Compare against <code>expected_files.csv</code>; complete the stacking plan</td><td><code>X1 X9</code></td></tr>
   </table>
 
@@ -232,6 +248,7 @@ backplate_image_floorplan_<span class="y">[vcode-nof]</span>_<span class="y">[sc
     <ul class="clean small" style="margin-top:10px">
       <li><b>First bedroom is the master:</b> in 1-bed and 2-bed units the primary bedroom is <code>MasterBedroom</code> (its ensuite <code>MasterBathroom</code>); remaining bedrooms are <code>Bedroom1</code>, <code>Bedroom2</code>… with ensuites <code>Bathroom1</code>, <code>Bathroom2</code>. Studios use <code>Bedroom</code>.</li>
       <li><b>No corridor sub-rooms:</b> approach/passage shots belong to the room they lead to, numbered <i>after</i> the in-room shots — the lowest index is the landing image when a floorplan label is clicked, and it must be inside the room.</li>
+      <li><b>Foyer is mandatory:</b> the tour\u2019s Enter button lands on the <code>Foyer</code> (or <code>Entrance</code>) camera \u2014 a unit without one opens on a random room. Foyer index 1 = the entry view.</li>
       <li><b>Passage → Corridor</b>, <b>Common/guest toilet → Bathroom</b> (or <code>PowderRoom</code> when the plan says so). Never LOUNDRY / COMMEN / free-spelling — the dictionary is closed; new rooms need sign-off.</li>
     </ul>
   </div>
@@ -323,7 +340,7 @@ camera CSVs and floorplan CSVs can never drift apart. The validator (tab 02) is 
 
   <div class="card">
     <h3 style="margin-top:0">Step 3 · Options</h3>
-    <p><label><input type="checkbox" id="gDummy" checked> <b>Dummy placeholder assets</b> — white 360s at 8000×4000, white 4096×4096 backplates, template camera + floorplan CSVs, empty GLBs. One image per expected room, correctly named: artists overwrite 1-to-1, and adding a second shot of a room is copy + bump <code>_1</code> → <code>_2</code>.</label></p>
+    <p><label><input type="checkbox" id="gDummy" checked> <b>Dummy placeholder assets</b> — white 360s at 8000×4000, white 4096×4096 backplates, template camera + floorplan CSVs, empty GLBs. Realistic image counts per room (MasterBedroom ×3, Living ×3, Bedrooms ×2, wet areas ×1…), correctly named: artists overwrite 1-to-1, and adding a second shot of a room is copy + bump <code>_1</code> → <code>_2</code>.</label></p>
     <p><label><input type="checkbox" id="gIntake" checked> <code>intake/</code> template — the folder artists fill with raw deliveries</label></p>
     <p><label><input type="checkbox" id="gUnit"> <code>image_360_property_unit/</code> per-tower folders (only if this project renders unique per-unit views)</label></p>
   </div>
@@ -368,6 +385,57 @@ camera CSVs and floorplan CSVs can never drift apart. The validator (tab 02) is 
       </p>
       <p class="small" id="rnExecNote"></p>
       <div id="rnProg" class="small"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TAB : FLOORPLAN CSV MAKER ============ -->
+<section class="tab" id="tab-csvmaker">
+  <h2>Floorplan CSV creator — click-to-place labels</h2>
+  <p class="lead">Upload the unit-plan render — the variation code and floor are read from the filename when possible. Pick a tag on the left (search to filter), click its spot on the plan, download the correctly-named CSV. Coordinates auto-normalize to the 4096 grid.</p>
+  <div class="card">
+    <div class="frow">
+      <label>Plan image<input class="gi" type="file" id="fcImg" accept="image/*"></label>
+      <label>Variation code (no f)<input class="gi" id="fcVcode" placeholder="auto from filename" style="width:150px;font-family:ui-monospace,Menlo,monospace"></label>
+      <label>Floor<input class="gi" id="fcFloor" value="0" style="width:60px"></label>
+      <label>Edit existing CSV (optional)<input class="gi" type="file" id="fcCsv" accept=".csv"></label>
+    </div>
+    <p class="small" id="fcVcodeWarn" style="color:var(--err)"></p>
+    <p class="small" id="fcAutoNote" style="color:var(--ok)"></p>
+  </div>
+  <div id="fcStudio" style="gap:18px;align-items:flex-start">
+    <div class="fcside">
+      <input class="gi" id="fcSearch" placeholder="Search tags…" style="width:100%;margin-bottom:8px">
+      <div class="chips" id="fcChips" style="max-height:44vh;overflow:auto"></div>
+      <div style="margin-top:10px">
+        <label class="small" style="font-weight:700">Number suffix (optional)</label>
+        <input class="gi" id="fcSuffix" placeholder="1" style="width:100%">
+      </div>
+      <div style="margin-top:8px">
+        <label class="small" style="font-weight:700">Custom tag (CamelCase)</label>
+        <input class="gi" id="fcCustom" placeholder="WineCellar" style="width:100%">
+        <p class="small" id="fcCustomWarn" style="color:var(--warn);margin:4px 0 0"></p>
+      </div>
+      <p class="small" style="margin-top:10px">Active: <b id="fcActive" style="color:var(--blue)">— pick a tag —</b></p>
+      <p class="small" id="fcCount" style="margin:6px 0"></p>
+      <button class="btn" id="fcDownload" type="button" style="width:100%">Download CSV</button>
+    </div>
+    <div class="fcmain">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <div class="fczoom">
+          <button type="button" id="fcZoomOut" title="Zoom out">−</button>
+          <span id="fcZoomPct">100%</span>
+          <button type="button" id="fcZoomIn" title="Zoom in">+</button>
+          <button type="button" id="fcZoomFit" title="Fit to view">Fit</button>
+          <button type="button" id="fcZoom100" title="Actual pixels">1:1</button>
+        </div>
+        <span class="small">Click the plan to place the active tag · click a placed label to remove it · zoom in for tight rooms</span>
+      </div>
+      <div id="fcView">
+        <div id="fcWrap" style="position:relative;display:inline-block;cursor:crosshair;line-height:0">
+          <img id="fcPlan" style="display:block">
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -425,12 +493,13 @@ camera CSVs and floorplan CSVs can never drift apart. The validator (tab 02) is 
 </main>
 
 <script>
-const PYQC = "#!/usr/bin/env python3\n\"\"\"\nPropVR Content QC \u2014 deployment naming & sync validator (local CLI).\nZero dependencies. Walks the project folder IN PLACE (nothing copied) \u2014 built for 20-30 GB projects.\n\nUsage:\n    python3 propvr_qc.py /path/to/project_1-0-1_uae_abu-dhabi_thecanopies\n    python3 propvr_qc.py <folder> --out /path/to/reports    (default: alongside the project)\n\nOutputs qc_report.html + qc_report.csv. Exit code 1 if any errors (CI-friendly).\n\"\"\"\nimport os, re, sys, csv, html, datetime\n\n# ---------------- config ----------------\nROOMS = {\"MasterBedroom\",\"MasterBathroom\",\"Bedroom\",\"Bedroom1\",\"Bedroom2\",\"Bedroom3\",\"Bedroom4\",\n         \"Bathroom\",\"Bathroom1\",\"Bathroom2\",\"Bathroom3\",\"PowderRoom\",\"Kitchen\",\"Living\",\"Dining\",\n         \"Foyer\",\"Corridor\",\"Laundry\",\"LaundryCloset\",\"MaidRoom\",\"MaidBathroom\",\"Study\",\"Balcony\",\n         \"LivingBalcony\",\"MasterBedroomBalcony\",\"MasterBedroomWardrobe\",\"BedroomBathroom\",\"FamilyRoom\",\n         \"Majlis\",\"Terrace\",\"Store\",\"Pantry\",\"DriverRoom\",\"Garage\",\"Garden\",\"Roof\",\"Entrance\"}\nTOP = {\"backplate_image_project\",\"backplate_image_masterplan\",\"backplate_image_tower\",\n       \"backplate_image_tower-floorplate\",\"backplate_video_tower\",\"backplate_image_villa\",\n       \"backplate_image_cluster\",\"backplate_image_floorplan_property_variation\",\n       \"csv_camera_property_variation\",\"csv_floorplan_property_variation\",\n       \"model_360-collision_property_variation\",\"image_360_property_variation\",\n       \"image_360_property_unit\",\"video_360-amenity\",\"_source_camera_data\",\"intake\"}\nJUNK = re.compile(r\"^(\\.DS_Store|Thumbs\\.db|desktop\\.ini|~\\$.*|\\._.*)$\", re.I)\nVC  = r\"(a|v|d|th)_(s|p)_(st|\\d+f?_st|\\d+bf?)_([a-z]\\d{0,2})\"\nVCN = r\"(a|v|d|th)_(s|p)_(st|\\d+_st|\\d+b)_([a-z]\\d{0,2})\"\nUC  = r\"[a-z][a-z0-9]*-\\d{2}-\\d{2}\"\nRX = dict(\n    root    = re.compile(r\"^project_\\d+(-\\d+)*_[a-z-]+_[a-z-]+_[a-z0-9-]+$\"),\n    img_var = re.compile(rf\"^image_360_({VC})_(s\\d+)_(\\d+)_([A-Za-z0-9]+)_(\\d+)\\.jpe?g$\"),\n    img_unit= re.compile(rf\"^image_360_({UC})_({VC})_(s\\d+)_(\\d+)_([A-Za-z0-9]+)_(\\d+)\\.jpe?g$\"),\n    cam     = re.compile(rf\"^csv_camera_({VCN})\\.csv$\"),\n    fp      = re.compile(rf\"^csv_floorplan_({VCN})_(\\d+)\\.csv$\"),\n    glb     = re.compile(rf\"^model_360-collision_({VCN})_(\\d+)\\.glb$\"),\n    bpf     = re.compile(rf\"^backplate_image_floorplan_({VCN})_(s\\d+)_(\\d+)\\.(webp|jpg)$\"),\n    camrow  = re.compile(r\"^(\\d+)_([A-Z][A-Za-z0-9]*)_(\\d+)$\"),\n    room    = re.compile(r\"^[A-Z][A-Za-z0-9]*$\"),\n    unitdir = re.compile(rf\"^{UC}$\"),\n    charset = re.compile(r\"[^A-Za-z0-9._\\-]\"))\n\nstrip_f = lambda c: re.sub(r\"(\\d+)f_st\", r\"\\1_st\", re.sub(r\"(\\d+)bf\", r\"\\1b\", c))\n\nfindings = []\ndef F(sev, code, path, msg, fix=\"\"):\n    findings.append(dict(sev=sev, code=code, path=path, msg=msg, fix=fix))\n\nclass Var:\n    def __init__(s):\n        s.imgs, s.cams, s.fps = {}, {}, {}\n        s.glbs, s.bps, s.codes, s.heights = set(), set(), set(), []\n\ndef main():\n    args = [a for a in sys.argv[1:] if not a.startswith(\"--\")]\n    if not args:\n        print(__doc__); sys.exit(2)\n    root = os.path.abspath(args[0].rstrip(\"/\\\\\"))\n    outdir = os.path.dirname(root)\n    if \"--out\" in sys.argv:\n        outdir = sys.argv[sys.argv.index(\"--out\") + 1]\n    rootname = os.path.basename(root)\n    if not RX[\"root\"].match(rootname):\n        F(\"warning\",\"S1\", rootname, \"Folder is not a full project root (project_[ver]_[country]_[city]_[slug]) - validating contents anyway.\",\n          \"e.g. project_1-0-1_uae_abu-dhabi_thecanopies\")\n\n    vars_, csv_jobs = {}, []\n    V = lambda k: vars_.setdefault(k, Var())\n    nfiles = nimgs = passed = 0\n\n    for dirpath, dirnames, filenames in os.walk(root):\n        rel_dir = os.path.relpath(dirpath, root).replace(\"\\\\\",\"/\")\n        rel_dir = \"\" if rel_dir == \".\" else rel_dir\n        for name in filenames:\n            nfiles += 1\n            rel = f\"{rel_dir}/{name}\" if rel_dir else name\n            segs = rel.split(\"/\")\n            if JUNK.match(name):\n                F(\"warning\",\"S4\", rel, \"Junk file - must not ship in deployment.\", \"Delete before hand-over.\"); continue\n            if name.lower() == \"readme.txt\" or name == \"expected_files.csv\":\n                continue\n            if segs[0] == \"intake\":\n                continue\n            for s in segs:\n                if RX[\"charset\"].search(s):\n                    F(\"error\",\"S3\", rel, f'Illegal character(s) in \"{s}\" - only letters, digits, \"_\", \"-\", \".\" allowed. No spaces.',\n                      \"Rename: _ separates tokens, - replaces spaces.\")\n            if len(segs) == 1:\n                if not re.match(r\"readme\", name, re.I) and not name.startswith(\"qc_report\"):\n                    F(\"warning\",\"S2\", rel, \"Loose file at project root.\", \"Files live inside asset-type folders.\")\n                continue\n            top = segs[0]\n            if top not in TOP:\n                F(\"error\",\"S2\", rel, f'Unknown top-level folder \"{top}\".', \"Use only the canonical folder set.\"); continue\n            size = 0\n            try: size = os.path.getsize(os.path.join(dirpath, name))\n            except OSError: pass\n\n            if top == \"image_360_property_variation\":\n                m = RX[\"img_var\"].match(name)\n                if not m:\n                    F(\"error\",\"N1\", rel, \"360 name must be image_360_[vcode]_[scheme]_[floor]_[Room]_[n].jpg\"); continue\n                vcode, scheme, room, n = m.group(1), m.group(6), m.group(8), int(m.group(9))\n                k = strip_f(vcode); v = V(k); v.codes.add(vcode)\n                if len(segs) == 3 and segs[1] != vcode:\n                    F(\"error\",\"N2\", rel, f'File vcode \"{vcode}\" != folder \"{segs[1]}\".', \"Folder must equal the variation code.\")\n                if room not in ROOMS:\n                    F(\"warning\",\"N3\", rel, f'Room \"{room}\" not in the canonical dictionary.', \"Fix name or add to dictionary with sign-off.\")\n                key = (scheme, room, n)\n                if key in v.imgs: F(\"error\",\"N4\", rel, f\"Duplicate image {scheme} {room}_{n} for {k}.\")\n                v.imgs[key] = rel; nimgs += 1; passed += 1\n                if size > 6*1024*1024: F(\"warning\",\"Q1\", rel, f\"360 image is {size/1048576:.1f} MB - check export (8000x4000 JPG is usually 0.7-3 MB).\")\n            elif top == \"image_360_property_unit\":\n                if len(segs) > 3 and not RX[\"unitdir\"].match(segs[2]):\n                    F(\"error\",\"N5\", f\"{segs[0]}/{segs[1]}/{segs[2]}\", f'Unit folder \"{segs[2]}\" must be [tower]-[floor]-[unit], e.g. b1-06-09.')\n                if re.search(r\"\\.jpe?g$\", name, re.I):\n                    m = RX[\"img_unit\"].match(name)\n                    if not m:\n                        F(\"error\",\"N1\", rel, \"Unit 360 must be image_360_[unit-code]_[vcode]_[scheme]_[floor]_[Room]_[n].jpg\"); continue\n                    if len(segs) > 3 and m.group(1) != segs[2]:\n                        F(\"error\",\"N2\", rel, f'File unit-code \"{m.group(1)}\" != folder \"{segs[2]}\".')\n                    if m.group(9) not in ROOMS:\n                        F(\"warning\",\"N3\", rel, f'Room \"{m.group(9)}\" not in dictionary.')\n                    nimgs += 1; passed += 1\n            elif top == \"csv_camera_property_variation\":\n                if not name.lower().endswith(\".csv\"):\n                    if not re.match(r\"readme\", name, re.I): F(\"warning\",\"S5\", rel, \"Non-CSV file in csv_camera folder.\")\n                    continue\n                m = RX[\"cam\"].match(name)\n                if not m:\n                    extra = \" Contains a flipped (f) code - the app auto-flips CSVs.\" if re.search(r\"\\dbf|\\df_st\", name) else \"\"\n                    F(\"error\",\"N6\", rel, \"Camera CSV must be csv_camera_[vcode-no-f].csv.\" + extra); continue\n                V(m.group(1)); csv_jobs.append((\"cam\", m.group(1), None, os.path.join(dirpath,name), rel)); passed += 1\n            elif top == \"csv_floorplan_property_variation\":\n                if not name.lower().endswith(\".csv\"):\n                    if not re.match(r\"readme\", name, re.I): F(\"warning\",\"S5\", rel, \"Non-CSV file in csv_floorplan folder.\")\n                    continue\n                m = RX[\"fp\"].match(name)\n                if not m:\n                    extra = \" Contains a flipped (f) code.\" if re.search(r\"\\dbf|\\df_st\", name) else \"\"\n                    F(\"error\",\"N7\", rel, \"Floorplan CSV must be csv_floorplan_[vcode-no-f]_[floor].csv.\" + extra); continue\n                V(m.group(1)); csv_jobs.append((\"fp\", m.group(1), m.group(6), os.path.join(dirpath,name), rel)); passed += 1\n            elif top == \"model_360-collision_property_variation\":\n                m = RX[\"glb\"].match(name)\n                if not m:\n                    if not re.match(r\"readme\", name, re.I):\n                        F(\"error\",\"N8\", rel, \"Collision model must be model_360-collision_[vcode-no-f]_[floor].glb\",\n                          \"Flipped variants share the unflipped model.\")\n                    continue\n                V(m.group(1)).glbs.add(m.group(6)); passed += 1\n            elif top == \"backplate_image_floorplan_property_variation\":\n                m = RX[\"bpf\"].match(name)\n                if not m:\n                    if not re.match(r\"readme\", name, re.I) and \"_w640\" not in name:\n                        F(\"error\",\"N9\", rel, \"Floorplan backplate must be backplate_image_floorplan_[vcode-no-f]_[scheme]_[floor].webp\")\n                    continue\n                V(m.group(1)).bps.add((m.group(6), m.group(7)))\n                if m.group(8) == \"jpg\":\n                    F(\"warning\",\"Q2\", rel, \"Backplate is JPG - production spec is WebP 4096x4096 60-200 KB.\", \"Convert to webp.\")\n                elif size and not (40*1024 <= size <= 250*1024):\n                    F(\"warning\",\"Q3\", rel, f\"Backplate is {size//1024} KB - target 60-200 KB.\")\n                passed += 1\n            else:\n                passed += 1\n\n    # ---------------- CSV contents ----------------\n    for kind, k, floor, full, rel in csv_jobs:\n        try:\n            text = open(full, encoding=\"utf-8-sig\").read()\n        except Exception as e:\n            F(\"error\",\"C0\", rel, f\"Cannot read CSV: {e}\"); continue\n        rows = [r for r in text.splitlines() if r.strip()]\n        v = V(k)\n        if kind == \"cam\":\n            for i, r in enumerate(rows):\n                c = r.split(\",\")\n                if i == 0 and re.search(r\"name|location\", r, re.I):\n                    F(\"error\",\"C1\", rel, \"Camera CSV has a header row - spec is headerless.\"); continue\n                if len(c) != 10:\n                    F(\"error\",\"C2\", rel, f\"Row {i+1}: {len(c)} columns (need 10: name + 9 numbers).\"); continue\n                m = RX[\"camrow\"].match(c[0])\n                if not m:\n                    F(\"error\",\"C3\", rel, f'Row {i+1}: bad camera name \"{c[0]}\" (need floor_RoomName_n, CamelCase).'); continue\n                if m.group(2) not in ROOMS:\n                    F(\"warning\",\"N3\", rel, f'Row {i+1}: room \"{m.group(2)}\" not in dictionary.')\n                bad = [j for j in range(1,10) if not re.match(r\"^-?\\d+(\\.\\d+)?$\", c[j].strip())]\n                if bad: F(\"error\",\"C4\", rel, f\"Row {i+1}: non-numeric column(s) {bad}.\")\n                key = (m.group(2), int(m.group(3)))\n                if key in v.cams: F(\"error\",\"C5\", rel, f\"Duplicate camera {c[0]}.\")\n                v.cams[key] = rel\n                try: v.heights.append(float(c[3]))\n                except ValueError: pass\n        else:\n            names = {}\n            for i, r in enumerate(rows):\n                c = r.split(\",\")\n                if i == 0 and re.search(r\"layer|center\", r, re.I):\n                    F(\"error\",\"C1\", rel, \"Floorplan CSV has a header row - spec is headerless RoomName,x,y.\"); continue\n                if len(c) != 3:\n                    F(\"error\",\"C2\", rel, f\"Row {i+1}: {len(c)} columns (need 3).\"); continue\n                nm = c[0].strip()\n                if re.match(r\"^layer\\s\", nm, re.I):\n                    F(\"error\",\"C6\", rel, f'Row {i+1}: PSD junk label \"{nm}\".', \"Remove or rename to a real room.\"); continue\n                if nm != c[0]:\n                    F(\"error\",\"C7\", rel, f'Row {i+1}: leading/trailing spaces in \"{c[0]}\".')\n                if not RX[\"room\"].match(nm):\n                    F(\"error\",\"C3\", rel, f'Row {i+1}: \"{nm}\" is not CamelCase.')\n                elif nm not in ROOMS:\n                    F(\"warning\",\"N3\", rel, f'Row {i+1}: room \"{nm}\" not in dictionary.')\n                try:\n                    x, y = float(c[1]), float(c[2])\n                    if not (0 <= x <= 4096 and 0 <= y <= 4096):\n                        F(\"warning\",\"C8\", rel, f\"Row {i+1}: ({x:g}, {y:g}) outside the 4096 grid.\")\n                except ValueError:\n                    F(\"error\",\"C4\", rel, f\"Row {i+1}: coordinates not numeric.\")\n                names[nm] = True\n            v.fps[floor] = names\n\n    # ---------------- cross-sync ----------------\n    matrix = {}\n    for k, v in sorted(vars_.items()):\n        schemes = sorted({key[0] for key in v.imgs})\n        cam_keys = set(v.cams)\n        img_rooms, cam_rooms = {}, {}\n        for (s, r, n) in v.imgs: img_rooms.setdefault((s, r), []).append(n)\n        for (r, n) in v.cams: cam_rooms.setdefault(r, []).append(n)\n        if v.imgs and not v.cams: F(\"error\",\"X1\", k, \"Variation has 360 images but no camera CSV.\", f\"Add csv_camera_{k}.csv\")\n        if v.cams and not v.imgs: F(\"warning\",\"X2\", k, \"Camera CSV exists but no 360 images found.\")\n        if v.cams:\n            for (s, r, n) in v.imgs:\n                if (r, n) not in cam_keys:\n                    F(\"error\",\"X3\", v.imgs[(s, r, n)], f\"Image {r}_{n} (scheme {s}) has no camera row - unreachable in the tour.\",\n                      \"Add the camera or remove the image.\")\n        if v.imgs:\n            for (r, n) in cam_keys:\n                for s in schemes:\n                    if (s, r, n) not in v.imgs:\n                        F(\"error\",\"X4\", f\"csv_camera_{k}.csv\", f\"Camera {r}_{n} has no 360 image in scheme {s} - broken navigation node.\",\n                          \"Render the image for every scheme or remove the row.\")\n        for (s, r), ns in img_rooms.items():\n            ns.sort()\n            if ns[0] != 1:\n                F(\"error\",\"X5\", k, f\"Room {r} (scheme {s}): lowest image index is {ns[0]} - index 1 is the landing image and must exist.\",\n                  \"Renumber so the in-room shot is _1.\")\n            if any(b - a > 1 for a, b in zip(ns, ns[1:])):\n                F(\"warning\",\"X6\", k, f\"Room {r} (scheme {s}): image index gap ({','.join(map(str,ns))}).\")\n        if v.imgs:\n            if not v.glbs: F(\"error\",\"X7\", k, \"No collision model for this variation.\", f\"Add model_360-collision_{k}_0.glb\")\n            if not v.bps:  F(\"warning\",\"X8\", k, \"No floorplan backplate for this variation.\")\n            else:\n                for s in schemes:\n                    if not any(b[0] == s for b in v.bps):\n                        F(\"warning\",\"X8\", k, f\"No floorplan backplate for scheme {s}.\")\n            if not v.fps:  F(\"error\",\"X9\", k, \"No floorplan CSV for this variation.\", f\"Add csv_floorplan_{k}_0.csv\")\n        for floor, names in v.fps.items():\n            for nm in names:\n                if cam_rooms and nm not in cam_rooms and RX[\"room\"].match(nm):\n                    F(\"warning\",\"X10\", f\"csv_floorplan_{k}_{floor}.csv\", f'Label \"{nm}\" has no camera - dead label on the floorplan.',\n                      \"Add a camera/360 or remove after sign-off.\")\n            for r in cam_rooms:\n                if r not in names:\n                    F(\"info\",\"X11\", f\"csv_floorplan_{k}_{floor}.csv\", f\"Room {r} has cameras but no floorplan label - not clickable from the plan.\")\n        bad_h = [h for h in v.heights if not (100 <= h <= 220)]\n        if bad_h: F(\"warning\",\"Q4\", f\"csv_camera_{k}.csv\", f\"{len(bad_h)} camera(s) outside 100-220 cm height - check units are cm in collision-model space.\")\n        matrix[k] = dict(codes=\", \".join(sorted(v.codes)) or k, imgs=len(v.imgs), cams=len(v.cams),\n                         labels=sum(len(n) for n in v.fps.values()), glb=len(v.glbs), bp=len(v.bps))\n\n    # ---------------- reports ----------------\n    sev_rank = {\"error\":0, \"warning\":1, \"info\":2}\n    findings.sort(key=lambda x: (sev_rank[x[\"sev\"]], x[\"code\"], x[\"path\"]))\n    n_err = sum(1 for x in findings if x[\"sev\"]==\"error\")\n    n_warn = sum(1 for x in findings if x[\"sev\"]==\"warning\")\n\n    csv_path = os.path.join(outdir, \"qc_report.csv\")\n    with open(csv_path, \"w\", newline=\"\", encoding=\"utf-8\") as fh:\n        w = csv.writer(fh); w.writerow([\"severity\",\"rule\",\"path\",\"finding\",\"fix\"])\n        for x in findings: w.writerow([x[\"sev\"], x[\"code\"], x[\"path\"], x[\"msg\"], x[\"fix\"]])\n\n    E = html.escape\n    pill = {\"error\":\"err\",\"warning\":\"warn\",\"info\":\"info\"}\n    rows_html = \"\".join(\n        f'<tr><td><span class=\"pill {pill[x[\"sev\"]]}\">{x[\"sev\"]}</span></td><td><code>{x[\"code\"]}</code></td>'\n        f'<td><code>{E(x[\"path\"])}</code></td><td>{E(x[\"msg\"])}</td><td class=\"small\">{E(x[\"fix\"])}</td></tr>'\n        for x in findings)\n    mx_html = \"\".join(\n        f'<tr><td><code>{k}</code></td><td class=\"small\"><code>{E(m[\"codes\"])}</code></td><td>{m[\"imgs\"]}</td>'\n        f'<td>{m[\"cams\"]}</td><td>{m[\"labels\"]}</td><td>{\"OK\" if m[\"glb\"] else \"-\"}</td><td>{\"OK\" if m[\"bp\"] else \"-\"}</td></tr>'\n        for k, m in matrix.items())\n    badge = ('<div class=\"badge pass\">PASS - 0 errors. Content is deployment-ready.</div>' if n_err == 0 else\n             f'<div class=\"badge fail\">FAIL - {n_err} error(s), {n_warn} warning(s). Fix all errors before hand-over.</div>')\n    report = f\"\"\"<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>PropVR QC - {E(rootname)}</title><style>\n:root{{--blue:#0D54FE;--ink:#262626;--line:#E9EEF3;--err:#D93025;--warn:#B26A00;--ok:#188038;--info:#0D54FE}}\nbody{{font-family:\"Rethink Sans\",-apple-system,\"Segoe UI\",Arial,sans-serif;color:var(--ink);margin:0;background:#FCFCFC;font-size:14px}}\nheader{{background:#151521;color:#fff;padding:22px 32px}}header h1{{margin:0;font-size:20px}}header p{{margin:4px 0 0;color:#B3E5FC;font-size:12.5px}}\n.rib{{height:4px;background:linear-gradient(135deg,#1A73E8,#34C5F0 50%,#6EFFC5)}}\nmain{{max-width:1180px;margin:0 auto;padding:24px 32px 60px}}\n.badge{{border-radius:14px;padding:14px 20px;font-size:17px;font-weight:800;margin:14px 0}}\n.badge.pass{{background:linear-gradient(180deg,#6C68FD,#0D54FE);color:#fff}}.badge.fail{{background:#FDE7E5;color:var(--err);border:1px solid #F5C6C0}}\n.tiles{{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:16px 0}}\n.tile{{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 16px}}\n.tile .n{{font-size:28px;font-weight:800}}.tile .l{{font-size:11px;color:#666;font-weight:600;text-transform:uppercase}}\ntable{{border-collapse:collapse;width:100%;margin:10px 0;background:#fff;font-size:13px}}\nth{{background:var(--blue);color:#fff;text-align:left;padding:7px 10px}}td{{border:1px solid var(--line);padding:6px 10px;vertical-align:top}}\ntr:nth-child(even) td{{background:#FCFCFC}}code{{font-size:12px}}\n.pill{{border-radius:999px;padding:2px 10px;font-size:11.5px;font-weight:700}}\n.pill.err{{background:#FDE7E5;color:var(--err)}}.pill.warn{{background:#FFF1D6;color:var(--warn)}}.pill.info{{background:#E8F0FE;color:var(--info)}}\n.small{{font-size:12px;color:#666}}h2{{font-size:18px;margin:26px 0 6px}}</style></head><body>\n<header><h1>PropVR Content QC report</h1><p>{E(rootname)} &middot; {datetime.datetime.now().strftime(\"%Y-%m-%d %H:%M\")} &middot; propvr_qc.py</p></header><div class=\"rib\"></div><main>\n{badge}\n<div class=\"tiles\"><div class=\"tile\"><div class=\"n\" style=\"color:var(--blue)\">{nfiles}</div><div class=\"l\">files scanned</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--blue)\">{len(vars_)}</div><div class=\"l\">variations</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--blue)\">{nimgs}</div><div class=\"l\">360 images</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--err)\">{n_err}</div><div class=\"l\">errors</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--warn)\">{n_warn}</div><div class=\"l\">warnings</div></div></div>\n<h2>Findings</h2>\n{'<table><tr><th style=\"width:86px\">Severity</th><th style=\"width:52px\">Rule</th><th>Path / scope</th><th>Finding</th><th>Fix</th></tr>' + rows_html + '</table>' if findings else '<p>No findings - fully clean.</p>'}\n<h2>Per-variation sync matrix</h2>\n<table><tr><th>Variation (no-f)</th><th>Codes seen</th><th>360s</th><th>Cameras</th><th>Labels</th><th>GLB</th><th>Backplate</th></tr>{mx_html}</table>\n<p class=\"small\">Rule groups: S structure &middot; N naming &middot; C csv content &middot; X cross-sync &middot; Q quality. Full standard: propvr-content-standard.html</p>\n</main></body></html>\"\"\"\n    html_path = os.path.join(outdir, \"qc_report.html\")\n    open(html_path, \"w\", encoding=\"utf-8\").write(report)\n\n    print(f\"\\nPropVR Content QC - {rootname}\")\n    print(f\"  files: {nfiles}   variations: {len(vars_)}   360s: {nimgs}\")\n    print(f\"  ERRORS: {n_err}   warnings: {n_warn}   info: {len(findings)-n_err-n_warn}\")\n    for x in findings[:15]:\n        print(f\"  [{x['sev'][:4].upper()}] {x['code']:4s} {x['path']}: {x['msg']}\")\n    if len(findings) > 15: print(f\"  ... {len(findings)-15} more - see report\")\n    print(f\"  report: {html_path}\\n          {csv_path}\")\n    sys.exit(1 if n_err else 0)\n\nif __name__ == \"__main__\":\n    main()\n";
+const PYQC = "#!/usr/bin/env python3\n\"\"\"\nPropVR Content QC \u2014 deployment naming & sync validator (local CLI).\nZero dependencies. Walks the project folder IN PLACE (nothing copied) \u2014 built for 20-30 GB projects.\n\nUsage:\n    python3 propvr_qc.py /path/to/project_1-0-1_uae_abu-dhabi_thecanopies\n    python3 propvr_qc.py <folder> --out /path/to/reports    (default: alongside the project)\n\nOutputs qc_report.html + qc_report.csv. Exit code 1 if any errors (CI-friendly).\n\"\"\"\nimport os, re, sys, csv, html, datetime\n\n# ---------------- config ----------------\nROOMS = {\"MasterBedroom\",\"MasterBathroom\",\"Bedroom\",\"Bedroom1\",\"Bedroom2\",\"Bedroom3\",\"Bedroom4\",\n         \"Bathroom\",\"Bathroom1\",\"Bathroom2\",\"Bathroom3\",\"PowderRoom\",\"Kitchen\",\"Living\",\"Dining\",\n         \"Foyer\",\"Corridor\",\"Laundry\",\"LaundryCloset\",\"MaidRoom\",\"MaidBathroom\",\"Study\",\"Balcony\",\n         \"LivingBalcony\",\"MasterBedroomBalcony\",\"MasterBedroomWardrobe\",\"BedroomBathroom\",\"FamilyRoom\",\n         \"Majlis\",\"Terrace\",\"Store\",\"Pantry\",\"DriverRoom\",\"Garage\",\"Garden\",\"Roof\",\"Entrance\",\n         \"Pool\",\"Bar\",\"Lobby\",\"ShowKitchen\",\"GameMediaRoom\",\"MediaRoom\",\"MultipurposeRoom\",\"DryCloset\",\n         \"ElevatorLobby\",\"MainElevatorLobby\",\"LivingDiningSpace\",\"Gym\",\"Office\",\"MaidsRoom\",\"MaidsBathroom\"}\nTOP = {\"backplate_image_project\",\"backplate_image_masterplan\",\"backplate_image_tower\",\n       \"backplate_image_tower-floorplate\",\"backplate_video_tower\",\"backplate_image_villa\",\n       \"backplate_image_cluster\",\"backplate_image_floorplan_property_variation\",\n       \"csv_camera_property_variation\",\"csv_floorplan_property_variation\",\n       \"model_360-collision_property_variation\",\"image_360_property_variation\",\n       \"image_360_property_unit\",\"video_360-amenity\",\"_source_camera_data\",\"intake\"}\nJUNK = re.compile(r\"^(\\.DS_Store|Thumbs\\.db|desktop\\.ini|~\\$.*|\\._.*)$\", re.I)\nVC  = r\"(a|v|d|th)_(s|p)_(st|\\d+f?_st|\\d+bf?)_([a-z]\\d{0,2})\"\nVCN = r\"(a|v|d|th)_(s|p)_(st|\\d+_st|\\d+b)_([a-z]\\d{0,2})\"\nUC  = r\"[a-z][a-z0-9]*-\\d{2}-\\d{2}\"\nRX = dict(\n    root    = re.compile(r\"^project_\\d+(-\\d+)*_[a-z-]+_[a-z-]+_[a-z0-9-]+$\"),\n    img_var = re.compile(rf\"^image_360_({VC})_(s\\d+)_(\\d+)_([A-Za-z0-9]+)_(\\d+)\\.jpe?g$\"),\n    img_unit= re.compile(rf\"^image_360_({UC})_({VC})_(s\\d+)_(\\d+)_([A-Za-z0-9]+)_(\\d+)\\.jpe?g$\"),\n    cam     = re.compile(rf\"^csv_camera_({VCN})\\.csv$\"),\n    fp      = re.compile(rf\"^csv_floorplan_({VCN})_(\\d+)\\.csv$\"),\n    glb     = re.compile(rf\"^model_360-collision_({VCN})_(\\d+)\\.glb$\"),\n    bpf     = re.compile(rf\"^backplate_image_floorplan_({VCN})_(s\\d+)_(\\d+)\\.(webp|jpg)$\"),\n    camrow  = re.compile(r\"^(\\d+)_([A-Z][A-Za-z0-9]*)_(\\d+)$\"),\n    room    = re.compile(r\"^[A-Z][A-Za-z0-9]*$\"),\n    unitdir = re.compile(rf\"^{UC}$\"),\n    charset = re.compile(r\"[^A-Za-z0-9._\\-]\"))\n\nknown_room = lambda r: r in ROOMS or r.rstrip(\"0123456789\") in ROOMS\nstrip_f = lambda c: re.sub(r\"(\\d+)f_st\", r\"\\1_st\", re.sub(r\"(\\d+)bf\", r\"\\1b\", c))\n\nfindings = []\ndef F(sev, code, path, msg, fix=\"\"):\n    findings.append(dict(sev=sev, code=code, path=path, msg=msg, fix=fix))\n\nclass Var:\n    def __init__(s):\n        s.imgs, s.cams, s.fps = {}, {}, {}\n        s.glbs, s.bps, s.codes, s.heights = set(), set(), set(), []\n\ndef main():\n    args = [a for a in sys.argv[1:] if not a.startswith(\"--\")]\n    if not args:\n        print(__doc__); sys.exit(2)\n    root = os.path.abspath(args[0].rstrip(\"/\\\\\"))\n    outdir = os.path.dirname(root)\n    if \"--out\" in sys.argv:\n        outdir = sys.argv[sys.argv.index(\"--out\") + 1]\n    rootname = os.path.basename(root)\n    if not RX[\"root\"].match(rootname):\n        F(\"warning\",\"S1\", rootname, \"Folder is not a full project root (project_[ver]_[country]_[city]_[slug]) - validating contents anyway.\",\n          \"e.g. project_1-0-1_uae_abu-dhabi_thecanopies\")\n\n    vars_, csv_jobs = {}, []\n    V = lambda k: vars_.setdefault(k, Var())\n    nfiles = nimgs = passed = 0\n\n    for dirpath, dirnames, filenames in os.walk(root):\n        rel_dir = os.path.relpath(dirpath, root).replace(\"\\\\\",\"/\")\n        rel_dir = \"\" if rel_dir == \".\" else rel_dir\n        for name in filenames:\n            nfiles += 1\n            rel = f\"{rel_dir}/{name}\" if rel_dir else name\n            segs = rel.split(\"/\")\n            if JUNK.match(name):\n                F(\"warning\",\"S4\", rel, \"Junk file - must not ship in deployment.\", \"Delete before hand-over.\"); continue\n            if name.lower() == \"readme.txt\" or name == \"expected_files.csv\":\n                continue\n            if segs[0] == \"intake\":\n                continue\n            for s in segs:\n                if RX[\"charset\"].search(s):\n                    F(\"error\",\"S3\", rel, f'Illegal character(s) in \"{s}\" - only letters, digits, \"_\", \"-\", \".\" allowed. No spaces.',\n                      \"Rename: _ separates tokens, - replaces spaces.\")\n            if len(segs) == 1:\n                if not re.match(r\"readme\", name, re.I) and not name.startswith(\"qc_report\"):\n                    F(\"warning\",\"S2\", rel, \"Loose file at project root.\", \"Files live inside asset-type folders.\")\n                continue\n            top = segs[0]\n            if top not in TOP:\n                F(\"error\",\"S2\", rel, f'Unknown top-level folder \"{top}\".', \"Use only the canonical folder set.\"); continue\n            size = 0\n            try: size = os.path.getsize(os.path.join(dirpath, name))\n            except OSError: pass\n\n            if top == \"image_360_property_variation\":\n                m = RX[\"img_var\"].match(name)\n                if not m:\n                    F(\"error\",\"N1\", rel, \"360 name must be image_360_[vcode]_[scheme]_[floor]_[Room]_[n].jpg\"); continue\n                vcode, scheme, room, n = m.group(1), m.group(6), m.group(8), int(m.group(9))\n                k = strip_f(vcode); v = V(k); v.codes.add(vcode)\n                if len(segs) == 3 and segs[1] != vcode:\n                    F(\"error\",\"N2\", rel, f'File vcode \"{vcode}\" != folder \"{segs[1]}\".', \"Folder must equal the variation code.\")\n                if not known_room(room):\n                    F(\"warning\",\"N3\", rel, f'Room \"{room}\" not in the canonical dictionary.', \"Fix name or add to dictionary with sign-off.\")\n                key = (scheme, room, n)\n                if key in v.imgs: F(\"error\",\"N4\", rel, f\"Duplicate image {scheme} {room}_{n} for {k}.\")\n                v.imgs[key] = rel; nimgs += 1; passed += 1\n                if size > 6*1024*1024: F(\"warning\",\"Q1\", rel, f\"360 image is {size/1048576:.1f} MB - check export (8000x4000 JPG is usually 0.7-3 MB).\")\n            elif top == \"image_360_property_unit\":\n                if len(segs) > 3 and not RX[\"unitdir\"].match(segs[2]):\n                    F(\"error\",\"N5\", f\"{segs[0]}/{segs[1]}/{segs[2]}\", f'Unit folder \"{segs[2]}\" must be [tower]-[floor]-[unit], e.g. b1-06-09.')\n                if re.search(r\"\\.jpe?g$\", name, re.I):\n                    m = RX[\"img_unit\"].match(name)\n                    if not m:\n                        F(\"error\",\"N1\", rel, \"Unit 360 must be image_360_[unit-code]_[vcode]_[scheme]_[floor]_[Room]_[n].jpg\"); continue\n                    if len(segs) > 3 and m.group(1) != segs[2]:\n                        F(\"error\",\"N2\", rel, f'File unit-code \"{m.group(1)}\" != folder \"{segs[2]}\".')\n                    if not known_room(m.group(9)):\n                        F(\"warning\",\"N3\", rel, f'Room \"{m.group(9)}\" not in dictionary.')\n                    nimgs += 1; passed += 1\n            elif top == \"csv_camera_property_variation\":\n                if not name.lower().endswith(\".csv\"):\n                    if not re.match(r\"readme\", name, re.I): F(\"warning\",\"S5\", rel, \"Non-CSV file in csv_camera folder.\")\n                    continue\n                m = RX[\"cam\"].match(name)\n                if not m:\n                    extra = \" Contains a flipped (f) code - the app auto-flips CSVs.\" if re.search(r\"\\dbf|\\df_st\", name) else \"\"\n                    F(\"error\",\"N6\", rel, \"Camera CSV must be csv_camera_[vcode-no-f].csv.\" + extra); continue\n                V(m.group(1)); csv_jobs.append((\"cam\", m.group(1), None, os.path.join(dirpath,name), rel)); passed += 1\n            elif top == \"csv_floorplan_property_variation\":\n                if not name.lower().endswith(\".csv\"):\n                    if not re.match(r\"readme\", name, re.I): F(\"warning\",\"S5\", rel, \"Non-CSV file in csv_floorplan folder.\")\n                    continue\n                m = RX[\"fp\"].match(name)\n                if not m:\n                    extra = \" Contains a flipped (f) code.\" if re.search(r\"\\dbf|\\df_st\", name) else \"\"\n                    F(\"error\",\"N7\", rel, \"Floorplan CSV must be csv_floorplan_[vcode-no-f]_[floor].csv.\" + extra); continue\n                V(m.group(1)); csv_jobs.append((\"fp\", m.group(1), m.group(6), os.path.join(dirpath,name), rel)); passed += 1\n            elif top == \"model_360-collision_property_variation\":\n                m = RX[\"glb\"].match(name)\n                if not m:\n                    if not re.match(r\"readme\", name, re.I):\n                        F(\"error\",\"N8\", rel, \"Collision model must be model_360-collision_[vcode-no-f]_[floor].glb\",\n                          \"Flipped variants share the unflipped model.\")\n                    continue\n                V(m.group(1)).glbs.add(m.group(6)); passed += 1\n            elif top == \"backplate_image_floorplan_property_variation\":\n                m = RX[\"bpf\"].match(name)\n                if not m:\n                    if not re.match(r\"readme\", name, re.I) and \"_w640\" not in name:\n                        F(\"error\",\"N9\", rel, \"Floorplan backplate must be backplate_image_floorplan_[vcode-no-f]_[scheme]_[floor].webp\")\n                    continue\n                V(m.group(1)).bps.add((m.group(6), m.group(7)))\n                if m.group(8) == \"jpg\":\n                    F(\"warning\",\"Q2\", rel, \"Backplate is JPG - production spec is WebP 4096x4096 60-200 KB.\", \"Convert to webp.\")\n                elif size and not (40*1024 <= size <= 250*1024):\n                    F(\"warning\",\"Q3\", rel, f\"Backplate is {size//1024} KB - target 60-200 KB.\")\n                passed += 1\n            else:\n                passed += 1\n\n    # ---------------- CSV contents ----------------\n    for kind, k, floor, full, rel in csv_jobs:\n        try:\n            text = open(full, encoding=\"utf-8-sig\").read()\n        except Exception as e:\n            F(\"error\",\"C0\", rel, f\"Cannot read CSV: {e}\"); continue\n        rows = [r for r in text.splitlines() if r.strip()]\n        v = V(k)\n        if kind == \"cam\":\n            for i, r in enumerate(rows):\n                c = r.split(\",\")\n                if i == 0 and re.search(r\"name|location\", r, re.I):\n                    F(\"error\",\"C1\", rel, \"Camera CSV has a header row - spec is headerless.\"); continue\n                if len(c) != 10:\n                    F(\"error\",\"C2\", rel, f\"Row {i+1}: {len(c)} columns (need 10: name + 9 numbers).\"); continue\n                m = RX[\"camrow\"].match(c[0])\n                if not m:\n                    F(\"error\",\"C3\", rel, f'Row {i+1}: bad camera name \"{c[0]}\" (need floor_RoomName_n, CamelCase).'); continue\n                if not known_room(m.group(2)):\n                    F(\"warning\",\"N3\", rel, f'Row {i+1}: room \"{m.group(2)}\" not in dictionary.')\n                bad = [j for j in range(1,10) if not re.match(r\"^-?\\d+(\\.\\d+)?$\", c[j].strip())]\n                if bad: F(\"error\",\"C4\", rel, f\"Row {i+1}: non-numeric column(s) {bad}.\")\n                key = (m.group(2), int(m.group(3)))\n                if key in v.cams: F(\"error\",\"C5\", rel, f\"Duplicate camera {c[0]}.\")\n                v.cams[key] = rel\n                try: v.heights.append(float(c[3]))\n                except ValueError: pass\n        else:\n            names = {}\n            for i, r in enumerate(rows):\n                c = r.split(\",\")\n                if i == 0 and re.search(r\"layer|center\", r, re.I):\n                    F(\"error\",\"C1\", rel, \"Floorplan CSV has a header row - spec is headerless RoomName,x,y.\"); continue\n                if len(c) != 3:\n                    F(\"error\",\"C2\", rel, f\"Row {i+1}: {len(c)} columns (need 3).\"); continue\n                nm = c[0].strip()\n                if re.match(r\"^layer\\s\", nm, re.I):\n                    F(\"error\",\"C6\", rel, f'Row {i+1}: PSD junk label \"{nm}\".', \"Remove or rename to a real room.\"); continue\n                if nm != c[0]:\n                    F(\"error\",\"C7\", rel, f'Row {i+1}: leading/trailing spaces in \"{c[0]}\".')\n                if not RX[\"room\"].match(nm):\n                    F(\"error\",\"C3\", rel, f'Row {i+1}: \"{nm}\" is not CamelCase.')\n                elif not known_room(nm):\n                    F(\"warning\",\"N3\", rel, f'Row {i+1}: room \"{nm}\" not in dictionary.')\n                try:\n                    x, y = float(c[1]), float(c[2])\n                    if not (0 <= x <= 4096 and 0 <= y <= 4096):\n                        F(\"warning\",\"C8\", rel, f\"Row {i+1}: ({x:g}, {y:g}) outside the 4096 grid.\")\n                except ValueError:\n                    F(\"error\",\"C4\", rel, f\"Row {i+1}: coordinates not numeric.\")\n                names[nm] = True\n            v.fps[floor] = names\n\n    # ---------------- cross-sync ----------------\n    matrix = {}\n    for k, v in sorted(vars_.items()):\n        schemes = sorted({key[0] for key in v.imgs})\n        cam_keys = set(v.cams)\n        img_rooms, cam_rooms = {}, {}\n        for (s, r, n) in v.imgs: img_rooms.setdefault((s, r), []).append(n)\n        for (r, n) in v.cams: cam_rooms.setdefault(r, []).append(n)\n        if v.imgs and not v.cams: F(\"error\",\"X1\", k, \"Variation has 360 images but no camera CSV.\", f\"Add csv_camera_{k}.csv\")\n        if v.cams and not v.imgs: F(\"warning\",\"X2\", k, \"Camera CSV exists but no 360 images found.\")\n        if v.cams:\n            for (s, r, n) in v.imgs:\n                if (r, n) not in cam_keys:\n                    F(\"error\",\"X3\", v.imgs[(s, r, n)], f\"Image {r}_{n} (scheme {s}) has no camera row - unreachable in the tour.\",\n                      \"Add the camera or remove the image.\")\n        if v.imgs:\n            for (r, n) in cam_keys:\n                for s in schemes:\n                    if (s, r, n) not in v.imgs:\n                        F(\"error\",\"X4\", f\"csv_camera_{k}.csv\", f\"Camera {r}_{n} has no 360 image in scheme {s} - broken navigation node.\",\n                          \"Render the image for every scheme or remove the row.\")\n        for (s, r), ns in img_rooms.items():\n            ns.sort()\n            if ns[0] != 1:\n                F(\"error\",\"X5\", k, f\"Room {r} (scheme {s}): lowest image index is {ns[0]} - index 1 is the landing image and must exist.\",\n                  \"Renumber so the in-room shot is _1.\")\n            if any(b - a > 1 for a, b in zip(ns, ns[1:])):\n                F(\"warning\",\"X6\", k, f\"Room {r} (scheme {s}): image index gap ({','.join(map(str,ns))}).\")\n        if v.imgs:\n            entry_rooms = {key[1] for key in v.imgs}\n            if not ({\"Foyer\",\"Entrance\"} & entry_rooms):\n                F(\"warning\",\"X12\", k, \"No Foyer/Entrance 360 - the tour entry point is undefined and the app will land on an arbitrary room.\",\n                  \"Add a Foyer camera + 360 (index 1 = the entry view).\")\n            if not v.glbs: F(\"error\",\"X7\", k, \"No collision model for this variation.\", f\"Add model_360-collision_{k}_0.glb\")\n            if not v.bps:  F(\"warning\",\"X8\", k, \"No floorplan backplate for this variation.\")\n            else:\n                for s in schemes:\n                    if not any(b[0] == s for b in v.bps):\n                        F(\"warning\",\"X8\", k, f\"No floorplan backplate for scheme {s}.\")\n            if not v.fps:  F(\"error\",\"X9\", k, \"No floorplan CSV for this variation.\", f\"Add csv_floorplan_{k}_0.csv\")\n        for floor, names in v.fps.items():\n            for nm in names:\n                if cam_rooms and nm not in cam_rooms and RX[\"room\"].match(nm):\n                    F(\"warning\",\"X10\", f\"csv_floorplan_{k}_{floor}.csv\", f'Label \"{nm}\" has no camera - dead label on the floorplan.',\n                      \"Add a camera/360 or remove after sign-off.\")\n            for r in cam_rooms:\n                if r not in names:\n                    F(\"info\",\"X11\", f\"csv_floorplan_{k}_{floor}.csv\", f\"Room {r} has cameras but no floorplan label - not clickable from the plan.\")\n        bad_h = [h for h in v.heights if not (100 <= h <= 220)]\n        if bad_h: F(\"warning\",\"Q4\", f\"csv_camera_{k}.csv\", f\"{len(bad_h)} camera(s) outside 100-220 cm height - check units are cm in collision-model space.\")\n        matrix[k] = dict(codes=\", \".join(sorted(v.codes)) or k, imgs=len(v.imgs), cams=len(v.cams),\n                         labels=sum(len(n) for n in v.fps.values()), glb=len(v.glbs), bp=len(v.bps))\n\n    # ---------------- reports ----------------\n    sev_rank = {\"error\":0, \"warning\":1, \"info\":2}\n    findings.sort(key=lambda x: (sev_rank[x[\"sev\"]], x[\"code\"], x[\"path\"]))\n    n_err = sum(1 for x in findings if x[\"sev\"]==\"error\")\n    n_warn = sum(1 for x in findings if x[\"sev\"]==\"warning\")\n\n    csv_path = os.path.join(outdir, \"qc_report.csv\")\n    with open(csv_path, \"w\", newline=\"\", encoding=\"utf-8\") as fh:\n        w = csv.writer(fh); w.writerow([\"severity\",\"rule\",\"path\",\"finding\",\"fix\"])\n        for x in findings: w.writerow([x[\"sev\"], x[\"code\"], x[\"path\"], x[\"msg\"], x[\"fix\"]])\n\n    E = html.escape\n    pill = {\"error\":\"err\",\"warning\":\"warn\",\"info\":\"info\"}\n    rows_html = \"\".join(\n        f'<tr><td><span class=\"pill {pill[x[\"sev\"]]}\">{x[\"sev\"]}</span></td><td><code>{x[\"code\"]}</code></td>'\n        f'<td><code>{E(x[\"path\"])}</code></td><td>{E(x[\"msg\"])}</td><td class=\"small\">{E(x[\"fix\"])}</td></tr>'\n        for x in findings)\n    mx_html = \"\".join(\n        f'<tr><td><code>{k}</code></td><td class=\"small\"><code>{E(m[\"codes\"])}</code></td><td>{m[\"imgs\"]}</td>'\n        f'<td>{m[\"cams\"]}</td><td>{m[\"labels\"]}</td><td>{\"OK\" if m[\"glb\"] else \"-\"}</td><td>{\"OK\" if m[\"bp\"] else \"-\"}</td></tr>'\n        for k, m in matrix.items())\n    badge = ('<div class=\"badge pass\">PASS - 0 errors. Content is deployment-ready.</div>' if n_err == 0 else\n             f'<div class=\"badge fail\">FAIL - {n_err} error(s), {n_warn} warning(s). Fix all errors before hand-over.</div>')\n    report = f\"\"\"<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>PropVR QC - {E(rootname)}</title><style>\n:root{{--blue:#0D54FE;--ink:#262626;--line:#E9EEF3;--err:#D93025;--warn:#B26A00;--ok:#188038;--info:#0D54FE}}\nbody{{font-family:\"Rethink Sans\",-apple-system,\"Segoe UI\",Arial,sans-serif;color:var(--ink);margin:0;background:#FCFCFC;font-size:14px}}\nheader{{background:#151521;color:#fff;padding:22px 32px}}header h1{{margin:0;font-size:20px}}header p{{margin:4px 0 0;color:#B3E5FC;font-size:12.5px}}\n.rib{{height:4px;background:linear-gradient(135deg,#1A73E8,#34C5F0 50%,#6EFFC5)}}\nmain{{max-width:1180px;margin:0 auto;padding:24px 32px 60px}}\n.badge{{border-radius:14px;padding:14px 20px;font-size:17px;font-weight:800;margin:14px 0}}\n.badge.pass{{background:linear-gradient(180deg,#6C68FD,#0D54FE);color:#fff}}.badge.fail{{background:#FDE7E5;color:var(--err);border:1px solid #F5C6C0}}\n.tiles{{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:16px 0}}\n.tile{{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 16px}}\n.tile .n{{font-size:28px;font-weight:800}}.tile .l{{font-size:11px;color:#666;font-weight:600;text-transform:uppercase}}\ntable{{border-collapse:collapse;width:100%;margin:10px 0;background:#fff;font-size:13px}}\nth{{background:var(--blue);color:#fff;text-align:left;padding:7px 10px}}td{{border:1px solid var(--line);padding:6px 10px;vertical-align:top}}\ntr:nth-child(even) td{{background:#FCFCFC}}code{{font-size:12px}}\n.pill{{border-radius:999px;padding:2px 10px;font-size:11.5px;font-weight:700}}\n.pill.err{{background:#FDE7E5;color:var(--err)}}.pill.warn{{background:#FFF1D6;color:var(--warn)}}.pill.info{{background:#E8F0FE;color:var(--info)}}\n.small{{font-size:12px;color:#666}}h2{{font-size:18px;margin:26px 0 6px}}</style></head><body>\n<header><h1>PropVR Content QC report</h1><p>{E(rootname)} &middot; {datetime.datetime.now().strftime(\"%Y-%m-%d %H:%M\")} &middot; propvr_qc.py</p></header><div class=\"rib\"></div><main>\n{badge}\n<div class=\"tiles\"><div class=\"tile\"><div class=\"n\" style=\"color:var(--blue)\">{nfiles}</div><div class=\"l\">files scanned</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--blue)\">{len(vars_)}</div><div class=\"l\">variations</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--blue)\">{nimgs}</div><div class=\"l\">360 images</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--err)\">{n_err}</div><div class=\"l\">errors</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--warn)\">{n_warn}</div><div class=\"l\">warnings</div></div></div>\n<h2>Findings</h2>\n{'<table><tr><th style=\"width:86px\">Severity</th><th style=\"width:52px\">Rule</th><th>Path / scope</th><th>Finding</th><th>Fix</th></tr>' + rows_html + '</table>' if findings else '<p>No findings - fully clean.</p>'}\n<h2>Per-variation sync matrix</h2>\n<table><tr><th>Variation (no-f)</th><th>Codes seen</th><th>360s</th><th>Cameras</th><th>Labels</th><th>GLB</th><th>Backplate</th></tr>{mx_html}</table>\n<p class=\"small\">Rule groups: S structure &middot; N naming &middot; C csv content &middot; X cross-sync &middot; Q quality. Full standard: propvr-content-standard.html</p>\n</main></body></html>\"\"\"\n    html_path = os.path.join(outdir, \"qc_report.html\")\n    open(html_path, \"w\", encoding=\"utf-8\").write(report)\n\n    print(f\"\\nPropVR Content QC - {rootname}\")\n    print(f\"  files: {nfiles}   variations: {len(vars_)}   360s: {nimgs}\")\n    print(f\"  ERRORS: {n_err}   warnings: {n_warn}   info: {len(findings)-n_err-n_warn}\")\n    for x in findings[:15]:\n        print(f\"  [{x['sev'][:4].upper()}] {x['code']:4s} {x['path']}: {x['msg']}\")\n    if len(findings) > 15: print(f\"  ... {len(findings)-15} more - see report\")\n    print(f\"  report: {html_path}\\n          {csv_path}\")\n    sys.exit(1 if n_err else 0)\n\nif __name__ == \"__main__\":\n    main()\n";
 const CMDW = "#!/bin/bash\n# PropVR Content QC - double-click launcher (macOS)\ncd \"$(dirname \"$0\")\"\necho \"PropVR Content QC\"\necho \"Drag the PROJECT FOLDER into this window, then press Enter:\"\nread -r RAW\nFOLDER=$(echo \"$RAW\" | sed \"s/^'//; s/'$//; s/\\\\\\\\//g\" | xargs)\nif [ ! -d \"$FOLDER\" ]; then echo \"Not a folder: $FOLDER\"; read -p \"Press Enter to close.\"; exit 1; fi\npython3 \"$(dirname \"$0\")/propvr_qc.py\" \"$FOLDER\"\nopen \"$(dirname \"$FOLDER\")/qc_report.html\" 2>/dev/null\nread -p \"Done. Press Enter to close.\"\n";
 const BATW = "@echo off\nrem PropVR Content QC - drag a project folder onto this file (Windows)\nif \"%~1\"==\"\" ( echo Drag the project folder onto this .bat file. & pause & exit /b 1 )\npy \"%~dp0propvr_qc.py\" \"%~1\" || python \"%~dp0propvr_qc.py\" \"%~1\"\nstart \"\" \"%~dp1qc_report.html\"\npause\n";
 
 /* ================= CONFIG ================= */
-const ROOMS = new Set(["MasterBedroom","MasterBathroom","Bedroom","Bedroom1","Bedroom2","Bedroom3","Bedroom4","Bathroom","Bathroom1","Bathroom2","Bathroom3","PowderRoom","Kitchen","Living","Dining","Foyer","Corridor","Laundry","LaundryCloset","MaidRoom","MaidBathroom","Study","Balcony","LivingBalcony","MasterBedroomBalcony","MasterBedroomWardrobe","BedroomBathroom","FamilyRoom","Majlis","Terrace","Store","Pantry","DriverRoom","Garage","Garden","Roof","Entrance"]);
+const ROOMS = new Set(["MasterBedroom","MasterBathroom","Bedroom","Bedroom1","Bedroom2","Bedroom3","Bedroom4","Bathroom","Bathroom1","Bathroom2","Bathroom3","PowderRoom","Kitchen","Living","Dining","Foyer","Corridor","Laundry","LaundryCloset","MaidRoom","MaidBathroom","Study","Balcony","LivingBalcony","MasterBedroomBalcony","MasterBedroomWardrobe","BedroomBathroom","FamilyRoom","Majlis","Terrace","Store","Pantry","DriverRoom","Garage","Garden","Roof","Entrance","Pool","Bar","Lobby","ShowKitchen","GameMediaRoom","MediaRoom","MultipurposeRoom","DryCloset","ElevatorLobby","MainElevatorLobby","LivingDiningSpace","Gym","Office","MaidsRoom","MaidsBathroom"]);
+const knownRoom = r => ROOMS.has(r) || ROOMS.has(r.replace(/\d+$/,""));
 const TOP_FOLDERS = ["backplate_image_project","backplate_image_masterplan","backplate_image_tower","backplate_image_tower-floorplate","backplate_video_tower","backplate_image_villa","backplate_image_cluster","backplate_image_floorplan_property_variation","csv_camera_property_variation","csv_floorplan_property_variation","model_360-collision_property_variation","image_360_property_variation","image_360_property_unit","video_360-amenity","_source_camera_data","intake"];
 const SUBOK = ["svgs","thumbnails"];
 const JUNK = /^(\.DS_Store|Thumbs\.db|desktop\.ini|~\$.*)$/i;
@@ -554,17 +623,18 @@ function makeZip(entries){ // entries: [{name, text}]
 }
 
 function roomsForType(label, code){
+  // [RoomName, imageCount] - realistic render counts per room
   const studio = /_st(_|$)/.test(code) || /studio/.test(label);
   const beds = studio ? 0 : (parseInt((/(\d+)b/.exec(code)||[0,1])[1]) || 1);
   const maid = /-m-|-m$|\+m/i.test(label);
   let r;
-  if(studio) r = ["Bedroom","Bathroom","Kitchen","Living","Dining","Foyer","Corridor"];
+  if(studio) r = [["Bedroom",2],["Bathroom",1],["Kitchen",2],["Living",2],["Dining",1],["Foyer",1],["Corridor",1]];
   else {
-    r = ["MasterBedroom","MasterBathroom","Bathroom","Kitchen","Living","Dining","Foyer","Corridor","Laundry"];
-    for(let i=1;i<beds;i++) r.push("Bedroom"+i, "Bathroom"+i);
+    r = [["MasterBedroom",3],["MasterBathroom",1],["Bathroom",1],["Kitchen",2],["Living",3],["Dining",2],["Foyer",1],["Corridor",2],["Laundry",1]];
+    for(let i=1;i<beds;i++) r.push(["Bedroom"+i,2],["Bathroom"+i,1]);
   }
-  if(maid) r.push("MaidRoom","MaidBathroom");
-  if(maid && beds>=3) r.push("Study");
+  if(maid) r.push(["MaidRoom",2],["MaidBathroom",1]);
+  if(maid && beds>=3) r.push(["Study",2]);
   return r;
 }
 async function whiteBlobBytes(w,h,type,q){
@@ -572,8 +642,11 @@ async function whiteBlobBytes(w,h,type,q){
   const x=c.getContext("2d"); x.fillStyle="#ffffff"; x.fillRect(0,0,w,h);
   x.fillStyle="#dddddd"; x.font=Math.round(h/40)+"px sans-serif"; x.textAlign="center";
   x.fillText("PROPVR PLACEHOLDER - REPLACE ("+w+"x"+h+")", w/2, h/2);
-  const b = await new Promise(r=>c.toBlob(r,type,q));
-  return new Uint8Array(await b.arrayBuffer());
+  let b = await new Promise(r=>c.toBlob(r,type,q));
+  let ext = type.split("/")[1];
+  if(!b && type !== "image/jpeg"){ b = await new Promise(r=>c.toBlob(r,"image/jpeg",q)); ext = "jpg"; }
+  if(!b) throw new Error("This browser cannot export canvas images - use Chrome or Edge for placeholder generation.");
+  return {bytes:new Uint8Array(await b.arrayBuffer()), ext};
 }
 const stripFj = c => c.replace(/(\d+)bf/,"$1b").replace(/(\d+)f_st/,"$1_st");
 document.getElementById("gBtn").onclick = async () => {
@@ -591,9 +664,14 @@ document.getElementById("gBtn").onclick = async () => {
   if(!schemes.length) schemes.push("s1");
   let w360=null, wBp=null;
   if(wantDummy){
-    document.getElementById("gMsg").textContent = "Rendering placeholder images…";
-    w360 = await whiteBlobBytes(8000,4000,"image/jpeg",0.7);
-    wBp  = await whiteBlobBytes(4096,4096,"image/webp",0.8);
+    document.getElementById("gMsg").textContent = "Rendering placeholder images… (a few seconds)";
+    try {
+      w360 = await whiteBlobBytes(8000,4000,"image/jpeg",0.7);
+      wBp  = await whiteBlobBytes(4096,4096,"image/webp",0.8);
+    } catch(err){
+      document.getElementById("gMsg").textContent = "⚠ Placeholder rendering failed: " + err.message;
+      return;
+    }
   }
   const E=[], R=(p,txt)=>E.push({name:root+p+"readme.txt", text:txt+"\n\nConventions: lowercase - \"_\" separates tokens - \"-\" replaces spaces - CamelCase only for RoomName.\nFull standard: propvr-content-standard.html - Validate with: python3 propvr_qc.py <project folder>"});
   const towered = shape==="single"||shape==="multi"||shape==="mixed";
@@ -627,14 +705,19 @@ document.getElementById("gBtn").onclick = async () => {
     for(const sch of schemes) manifest.push(`backplate_image_floorplan_${nf}_${sch}_0.webp,backplate_image_floorplan_property_variation,yes`);
     if(wantDummy){
       const rooms = roomsForType(label, vc);
-      for(const sch of schemes) for(const r of rooms)
-        E.push({name:root+`image_360_property_variation/${vc}/image_360_${vc}_${sch}_0_${r}_1.jpg`, data:w360});
-      E.push({name:root+`csv_camera_property_variation/csv_camera_${nf}.csv`,
-              text:rooms.map(r=>`0_${r}_1,0,0,150,0,0,0,-1,0,0`).join("\n")+"\n"});
-      E.push({name:root+`csv_floorplan_property_variation/csv_floorplan_${nf}_0.csv`,
-              text:rooms.map(r=>`${r},2048,2048`).join("\n")+"\n"});
+      const camRows = [], fpRows = [];
+      for(const [r, cnt] of rooms){
+        fpRows.push(`${r},2048,2048`);
+        for(let n=1; n<=cnt; n++){
+          camRows.push(`0_${r}_${n},0,0,150,0,0,0,-1,0,0`);
+          for(const sch of schemes)
+            E.push({name:root+`image_360_property_variation/${vc}/image_360_${vc}_${sch}_0_${r}_${n}.jpg`, data:w360.bytes});
+        }
+      }
+      E.push({name:root+`csv_camera_property_variation/csv_camera_${nf}.csv`, text:camRows.join("\n")+"\n"});
+      E.push({name:root+`csv_floorplan_property_variation/csv_floorplan_${nf}_0.csv`, text:fpRows.join("\n")+"\n"});
       E.push({name:root+`model_360-collision_property_variation/model_360-collision_${nf}_0.glb`, text:""});
-      for(const sch of schemes) E.push({name:root+`backplate_image_floorplan_property_variation/backplate_image_floorplan_${nf}_${sch}_0.webp`, data:wBp});
+      for(const sch of schemes) E.push({name:root+`backplate_image_floorplan_property_variation/backplate_image_floorplan_${nf}_${sch}_0.${wBp.ext==="jpg"?"jpg":"webp"}`, data:wBp.bytes});
     }
     if(wantIntake){
       R(`intake/${label}/`,`ARTIST DELIVERY for ${label} (deployment code ${vc}). Put: images/ (360 JPGs), cameras.xlsx (Max export: Name,LocX,LocY,LocZ,RotX,RotY,RotZ in metres), floorplan-labels.csv (PSD export), collision.glb, floorplan.webp. Do NOT rename deployment files by hand - the pipeline does it.`);
@@ -686,7 +769,7 @@ async function runValidation(files){
       if(!m){ F("error","N1", f.path, "360 image name does not match grammar image_360_[vcode]_[scheme]_[floor]_[Room]_[n].jpg",""); continue; }
       const vcode = m[1], scheme = m[6], room = m[8], n = +m[9], k = stripF(vcode);
       if(rel.length === 3 && rel[1] !== vcode) F("error","N2", f.path, `File vcode "${vcode}" ≠ its folder "${rel[1]}".`,"Folder name must equal the variation code.");
-      if(!ROOMS.has(room)) F("warning","N3", f.path, `Room "${room}" is not in the canonical dictionary.`,"Add to dictionary with sign-off, or fix the name.");
+      if(!knownRoom(room)) F("warning","N3", f.path, `Room "${room}" is not in the canonical dictionary.`,"Add to dictionary with sign-off, or fix the name.");
       const v = V(k); v.vcodes.add(vcode);
       const key = scheme + "|" + room + "_" + n;
       if(v.imgs.has(key)) F("error","N4", f.path, `Duplicate image key ${key} for variation ${k}.`,"");
@@ -700,7 +783,7 @@ async function runValidation(files){
         const m = RX.img_unit.exec(name);
         if(!m){ F("error","N1", f.path, "Unit 360 name must be image_360_[unit-code]_[vcode]_[scheme]_[floor]_[Room]_[n].jpg",""); continue; }
         if(rel.length>=3 && m[1]!==rel[2]) F("error","N2", f.path, `File unit-code "${m[1]}" ≠ folder "${rel[2]}".`,"");
-        if(!ROOMS.has(m[9])) F("warning","N3", f.path, `Room "${m[9]}" not in dictionary.`,"");
+        if(!knownRoom(m[9])) F("warning","N3", f.path, `Room "${m[9]}" not in dictionary.`,"");
         imgCount++; passed++;
       }
     }
@@ -744,7 +827,7 @@ async function runValidation(files){
         if(c.length !== 10){ F("error","C2", job.f.path, `Row ${i+1}: ${c.length} columns (need 10: name + 9 numbers).`,""); return; }
         const m = RX.camrow.exec(c[0]);
         if(!m){ F("error","C3", job.f.path, `Row ${i+1}: bad camera name "${c[0]}" (need floor_RoomName_n, CamelCase).`,""); return; }
-        if(!ROOMS.has(m[2])) F("warning","N3", job.f.path, `Row ${i+1}: room "${m[2]}" not in dictionary.`,"");
+        if(!knownRoom(m[2])) F("warning","N3", job.f.path, `Row ${i+1}: room "${m[2]}" not in dictionary.`,"");
         for(let j=1;j<10;j++) if(isNaN(parseFloat(c[j]))) F("error","C4", job.f.path, `Row ${i+1}: column ${j+1} is not numeric.`,"");
         const key = m[2]+"_"+(+m[3]);
         if(v.cams.has(key)) F("error","C5", job.f.path, `Duplicate camera ${c[0]}.`,"");
@@ -761,7 +844,7 @@ async function runValidation(files){
         if(/^layer\s/i.test(nm)){ F("error","C6", job.f.path, `Row ${i+1}: PSD junk label "${nm}".`,"Remove the layer row or rename to a real room."); return; }
         if(nm !== c[0]) F("error","C7", job.f.path, `Row ${i+1}: leading/trailing spaces in "${c[0]}".`,"");
         if(!RX.room.test(nm)) F("error","C3", job.f.path, `Row ${i+1}: "${nm}" is not CamelCase (no spaces/caps-lock).`,"");
-        else if(!ROOMS.has(nm)) F("warning","N3", job.f.path, `Row ${i+1}: room "${nm}" not in dictionary.`,"");
+        else if(!knownRoom(nm)) F("warning","N3", job.f.path, `Row ${i+1}: room "${nm}" not in dictionary.`,"");
         const x=parseFloat(c[1]), y=parseFloat(c[2]);
         if(isNaN(x)||isNaN(y)) F("error","C4", job.f.path, `Row ${i+1}: coordinates not numeric.`,"");
         else if(x<0||x>4096||y<0||y>4096) F("warning","C8", job.f.path, `Row ${i+1}: (${x}, ${y}) outside the 4096 grid.`,"");
@@ -789,6 +872,9 @@ async function runValidation(files){
       if(ns[0] !== 1) F("error","X5", k, `Room ${r} (scheme ${s}): lowest image index is ${ns[0]} — index 1 is the landing image and must exist.`,"Renumber so the in-room shot is _1.");
       for(let i=1;i<ns.length;i++) if(ns[i]!==ns[i-1]+1){ F("warning","X6", k, `Room ${r} (scheme ${s}): image index gap (${ns.join(",")}).`,""); break; } }
     if(v.imgs.size){
+      const entryRooms = new Set([...v.imgs.keys()].map(key => parseImg(key)[1]));
+      if(!entryRooms.has("Foyer") && !entryRooms.has("Entrance"))
+        F("warning","X12", k, "No Foyer/Entrance 360 — the tour entry point is undefined and the app will land on an arbitrary room.","Add a Foyer camera + 360 (index 1 = the entry view).");
       if(!v.glbs.size) F("error","X7", k, "No collision model for this variation.","Add model_360-collision_"+k+"_0.glb");
       if(!v.bps.size) F("warning","X8", k, "No floorplan backplate for this variation.","");
       else for(const s of schemes) if(![...v.bps].some(b => b.startsWith(s+"_"))) F("warning","X8", k, `No floorplan backplate for scheme ${s}.`,"");
@@ -1161,6 +1247,147 @@ document.getElementById("gShape").onchange = () => {
 document.getElementById("gSchemesSel").onchange = () => {
   document.getElementById("gSchemesCustomWrap").style.display =
     document.getElementById("gSchemesSel").value === "custom" ? "flex" : "none";
+};
+
+/* ================= Floorplan CSV creator ================= */
+const FC_PRESETS = ["MasterBedroom","MasterBathroom","Bedroom","Bedroom1","Bedroom2","Bedroom3","Bathroom","Bathroom1","Bathroom2","PowderRoom","Kitchen","ShowKitchen","Living","Dining","LivingDiningSpace","Foyer","Corridor","Lobby","MainElevatorLobby","Laundry","MaidRoom","MaidBathroom","Study","Office","GameMediaRoom","MultipurposeRoom","Bar","Gym","DryCloset","Store","Pantry","Balcony","Terrace","Pool","Garden","FamilyRoom","Majlis"];
+let fcLabels = [], fcActiveRoom = null;
+function fcRenderChips(){
+  const q = (document.getElementById("fcSearch").value || "").toLowerCase();
+  document.getElementById("fcChips").innerHTML = FC_PRESETS
+    .filter(r => !q || r.toLowerCase().includes(q))
+    .map(r => {
+      const placed = fcLabels.some(l => l.name === r || l.name.replace(/\d+$/,"") === r);
+      return `<button type="button" data-room="${r}" ${placed ? 'style="border-color:var(--ok);color:var(--ok)"' : ''}>${r}${placed ? " ✓" : ""}</button>`;
+    }).join("") || '<p class="small">No tag matches — use the custom field below.</p>';
+  document.querySelectorAll("#fcChips button").forEach(b => b.onclick = () => {
+    fcActiveRoom = b.dataset.room; document.getElementById("fcCustom").value = "";
+    fcUpdateActive();
+  });
+}
+function fcCurrentName(){
+  const custom = document.getElementById("fcCustom").value.trim();
+  const base = custom || fcActiveRoom || "";
+  const suf = document.getElementById("fcSuffix").value.trim();
+  return base ? base + (suf || "") : "";
+}
+function fcUpdateActive(){
+  const name = fcCurrentName();
+  document.getElementById("fcActive").textContent = name || "— pick a tag —";
+  const custom = document.getElementById("fcCustom").value.trim();
+  const warn = document.getElementById("fcCustomWarn");
+  if(custom && !knownRoom(custom + (document.getElementById("fcSuffix").value.trim() || "")))
+    warn.textContent = "⚠ Not in the master library — the validator will flag it as a warning. Proceed only if this room name is approved.";
+  else warn.textContent = "";
+}
+document.getElementById("fcSearch").oninput = () => fcRenderChips();
+["fcSuffix","fcCustom"].forEach(id => document.getElementById(id).oninput = () => {
+  if(document.getElementById("fcCustom").value.trim()) fcActiveRoom = null;
+  fcUpdateActive();
+});
+document.getElementById("fcVcode").oninput = () => {
+  const v = document.getElementById("fcVcode").value.trim();
+  const w = document.getElementById("fcVcodeWarn");
+  if(/\dbf|\df_st/.test(v)) w.textContent = "Floorplan CSVs never carry the flipped (f) code — use " + stripF(v) + " (the app auto-flips).";
+  else if(v && !new RegExp("^" + VCN + "$").test(v)) w.textContent = "Code doesn't match [a|v|d|th]_[s|p]_[config]_[variant], e.g. a_s_2b_a1";
+  else w.textContent = "";
+};
+function fcAutoDetect(fname){
+  const note = document.getElementById("fcAutoNote"); note.textContent = "";
+  const base = fname.replace(/\.[^.]+$/,"");
+  const m = new RegExp(VC).exec(base);
+  let vc = null, how = "";
+  if(m){ vc = stripF(m[0]); how = "read from filename"; }
+  else if(typeof rnSuggestVcode === "function" && /bed|studio|bhk|type/i.test(base)){ vc = stripF(rnSuggestVcode(base)); how = "suggested from filename — verify"; }
+  if(vc){ document.getElementById("fcVcode").value = vc; document.getElementById("fcVcode").dispatchEvent(new Event("input")); }
+  const fm = /_(?:s\d+_)?(\d+)$/.exec(base);
+  if(fm && +fm[1] <= 9) document.getElementById("fcFloor").value = fm[1];
+  if(vc) note.textContent = `Variation code ${vc}` + (fm && +fm[1] <= 9 ? `, floor ${fm[1]}` : "") + " — " + how + ".";
+}
+let fcZoom = 1;
+function fcFitWidth(){
+  const view = document.getElementById("fcView");
+  return Math.max(100, view.clientWidth - 2);
+}
+function fcApplyZoom(z, cx, cy){
+  const view = document.getElementById("fcView"), img = document.getElementById("fcPlan");
+  const prevW = img.getBoundingClientRect().width || fcFitWidth();
+  // keep the viewport centre stable while zooming
+  const rx = ((cx ?? view.clientWidth/2) + view.scrollLeft) / prevW;
+  const ry = ((cy ?? view.clientHeight/2) + view.scrollTop) / (prevW * (img.naturalHeight/img.naturalWidth) || 1);
+  fcZoom = Math.min(6, Math.max(0.2, z));
+  const w = fcFitWidth() * fcZoom;
+  img.style.width = w + "px";
+  document.getElementById("fcZoomPct").textContent = Math.round(fcZoom*100) + "%";
+  view.scrollLeft = rx * w - view.clientWidth/2;
+  view.scrollTop  = ry * w * (img.naturalHeight/img.naturalWidth) - view.clientHeight/2;
+}
+document.getElementById("fcZoomIn").onclick  = () => fcApplyZoom(fcZoom * 1.4);
+document.getElementById("fcZoomOut").onclick = () => fcApplyZoom(fcZoom / 1.4);
+document.getElementById("fcZoomFit").onclick = () => fcApplyZoom(1);
+document.getElementById("fcZoom100").onclick = () => {
+  const img = document.getElementById("fcPlan");
+  fcApplyZoom(img.naturalWidth / fcFitWidth());
+};
+document.getElementById("fcImg").onchange = e => {
+  const f = e.target.files[0]; if(!f) return;
+  const img = document.getElementById("fcPlan");
+  img.onload = () => fcApplyZoom(1);
+  img.src = URL.createObjectURL(f);
+  document.getElementById("fcStudio").classList.add("on");
+  fcAutoDetect(f.name);
+  fcRenderChips(); fcRenderMarks();
+};
+document.getElementById("fcCsv").onchange = async e => {
+  const f = e.target.files[0]; if(!f) return;
+  const rows = (await f.text()).split(/\r?\n/).filter(r => r.trim());
+  fcLabels = [];
+  for(const r of rows){
+    const c = r.split(",");
+    if(c.length === 3 && !isNaN(parseFloat(c[1]))) fcLabels.push({name:c[0].trim(), x:+c[1], y:+c[2]});
+  }
+  const m = /csv_floorplan_(.+)_(\d+)\.csv/.exec(f.name);
+  if(m){ document.getElementById("fcVcode").value = m[1]; document.getElementById("fcFloor").value = m[2]; }
+  fcRenderChips(); fcRenderMarks();
+};
+document.getElementById("fcWrap").onclick = e => {
+  if(e.target.classList.contains("fcmark")){
+    fcLabels.splice(+e.target.dataset.i, 1); fcRenderChips(); fcRenderMarks(); return;
+  }
+  const name = fcCurrentName();
+  if(!name){ document.getElementById("fcActive").textContent = "— pick a tag first —"; return; }
+  if(!/^[A-Z][A-Za-z0-9]*$/.test(name)){ document.getElementById("fcActive").textContent = "Name must be CamelCase"; return; }
+  const img = document.getElementById("fcPlan"), r = img.getBoundingClientRect();
+  const x = Math.round((e.clientX - r.left) / r.width * 4096 * 100) / 100;
+  const y = Math.round((e.clientY - r.top) / r.height * 4096 * 100) / 100;
+  const dup = fcLabels.findIndex(l => l.name === name);
+  if(dup >= 0) fcLabels.splice(dup, 1);
+  fcLabels.push({name, x, y});
+  fcActiveRoom = null; document.getElementById("fcCustom").value = ""; document.getElementById("fcSuffix").value = "";
+  fcUpdateActive(); fcRenderChips(); fcRenderMarks();
+};
+function fcRenderMarks(){
+  const wrap = document.getElementById("fcWrap");
+  wrap.querySelectorAll(".fcmark").forEach(m => m.remove());
+  fcLabels.forEach((l,i) => {
+    const d = document.createElement("div");
+    d.className = "fcmark"; d.dataset.i = i; d.textContent = l.name;
+    d.style.left = (l.x/4096*100) + "%"; d.style.top = (l.y/4096*100) + "%";
+    d.title = `${l.name} (${l.x}, ${l.y}) — click to remove`;
+    wrap.appendChild(d);
+  });
+  document.getElementById("fcCount").textContent = fcLabels.length + " label(s) placed";
+}
+document.getElementById("fcDownload").onclick = () => {
+  let v = document.getElementById("fcVcode").value.trim();
+  if(!v){ document.getElementById("fcVcodeWarn").textContent = "Enter the variation code first."; return; }
+  v = stripF(v);
+  if(!fcLabels.length){ document.getElementById("fcCount").textContent = "Place at least one label."; return; }
+  const floor = document.getElementById("fcFloor").value.trim() || "0";
+  const csv = fcLabels.map(l => `${l.name},${l.x.toFixed(2)},${l.y.toFixed(2)}`).join("\n") + "\n";
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+  a.download = `csv_floorplan_${v}_${floor}.csv`; a.click();
 };
 </script>
 </body>
