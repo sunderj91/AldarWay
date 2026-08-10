@@ -387,6 +387,11 @@ camera CSVs and floorplan CSVs can never drift apart. The validator (tab 02) is 
       <div id="rnProg" class="small"></div>
     </div>
   </div>
+  <div class="card"><h3 style="margin-top:0">Automation downloads</h3>
+  <p class="small">For pipeline/CI use of rename + validation without the browser:</p>
+  <p><button class="btn ghost" onclick="dlEmbed('propvr_qc.py')">⇩ propvr_qc.py</button>
+     <button class="btn ghost" onclick="dlEmbed('PropVR-QC.command')">⇩ macOS launcher (.command)</button>
+     <button class="btn ghost" onclick="dlEmbed('propvr_qc.bat')">⇩ Windows launcher (.bat)</button></p></div>
 </section>
 
 <!-- ============ TAB : FLOORPLAN CSV MAKER ============ -->
@@ -668,11 +673,16 @@ document.getElementById("gBtn").onclick = async () => {
     try {
       w360 = await whiteBlobBytes(8000,4000,"image/jpeg",0.7);
       wBp  = await whiteBlobBytes(4096,4096,"image/webp",0.8);
+      var wProj = await whiteBlobBytes(4320,4320,"image/webp",0.8);
+      var w640  = await whiteBlobBytes(640,640,"image/webp",0.75);
+      var w320  = await whiteBlobBytes(320,320,"image/webp",0.75);
     } catch(err){
       document.getElementById("gMsg").textContent = "⚠ Placeholder rendering failed: " + err.message;
       return;
     }
   }
+  const svgMask = (ids, what) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4096 4096">\n<!-- PLACEHOLDER SELECTION MASK - replace each path with the real outline. Path id = ${what}. -->\n` +
+    ids.map((id,i) => `  <path id="${id}" d="M${200+i*450} 200 h380 v380 h-380 z" fill="#0D54FE" fill-opacity="0.35"/>`).join("\n") + "\n</svg>\n";
   const E=[], R=(p,txt)=>E.push({name:root+p+"readme.txt", text:txt+"\n\nConventions: lowercase - \"_\" separates tokens - \"-\" replaces spaces - CamelCase only for RoomName.\nFull standard: propvr-content-standard.html - Validate with: python3 propvr_qc.py <project folder>"});
   const towered = shape==="single"||shape==="multi"||shape==="mixed";
   const villaed = shape==="villa"||shape==="mixed";
@@ -724,7 +734,49 @@ document.getElementById("gBtn").onclick = async () => {
       E.push({name:root+`intake/${label}/images/readme.txt`, text:"360 renders. One file per Max camera, same names as cameras.xlsx."});
     }
   }
-  if(wantUnit) for(const t of towers) R(`image_360_property_unit/${t}/`,`Unit-level 360s (unique views): ${t}-[floor]-[unit]/image_360_${t}-[ff]-[uu]_[vcode]_[scheme]_[floor]_[RoomName]_[n].jpg`);
+  if(wantDummy){
+    const bx = wProj.ext === "jpg" ? "jpg" : "webp";
+    const bTowers = towers.filter(x=>!x.startsWith("v")), vClusters = towers.filter(x=>x.startsWith("v"));
+    // project hero
+    E.push({name:root+`backplate_image_project/backplate_image_${slug}_north_day.${bx}`, data:wProj.bytes});
+    E.push({name:root+`backplate_image_project/backplate_image_${slug}_north_day_w640_q75.webp`, data:w640.bytes});
+    E.push({name:root+`backplate_image_project/thumbnails/backplate_image_${slug}_north_day.webp`, data:w320.bytes});
+    E.push({name:root+`backplate_image_project/svgs/backplate_image_${slug}_north.svg`, text:svgMask(towers, "tower / cluster id")});
+    if(towered){
+      for(const t of bTowers){
+        E.push({name:root+`backplate_image_tower/${t}/backplate_image_tower_${t}_north_day.${bx}`, data:wProj.bytes});
+        E.push({name:root+`backplate_image_tower/${t}/backplate_image_tower_${t}_north_day_w640_q75.webp`, data:w640.bytes});
+        E.push({name:root+`backplate_image_tower/${t}/thumbnails/backplate_image_tower_${t}_north_day.webp`, data:w320.bytes});
+        E.push({name:root+`backplate_image_tower/${t}/svgs/backplate_image_tower_${t}_north.svg`, text:svgMask(["01","02","03"], "floor number")});
+        E.push({name:root+`backplate_image_tower-floorplate/${t}/backplate_image_tower-floorplate_${t}_01.${bx}`, data:wProj.bytes});
+        E.push({name:root+`backplate_image_tower-floorplate/${t}/backplate_image_tower-floorplate_${t}_01_w640_q75.webp`, data:w640.bytes});
+        E.push({name:root+`backplate_image_tower-floorplate/${t}/svgs/backplate_image_tower-floorplate_${t}_01.svg`, text:svgMask([`${t}-01-01`,`${t}-01-02`,`${t}-01-03`], "unit code")});
+        E.push({name:root+`backplate_video_tower/backplate_video_${slug}_${t}_north_day.mp4`, text:""});
+        E.push({name:root+`backplate_video_tower/thumbnails/backplate_video_${slug}_${t}_north_day.webp`, data:w320.bytes});
+        E.push({name:root+`backplate_video_tower/svgs/backplate_video_${slug}_${t}_north.svg`, text:svgMask(["01","02","03"], "floor number")});
+      }
+    }
+    if(villaed){
+      for(const v of (vClusters.length ? vClusters : ["v1"])){
+        E.push({name:root+`backplate_image_cluster/backplate_image_cluster_${v}_north_day.${bx}`, data:wProj.bytes});
+        E.push({name:root+`backplate_image_cluster/backplate_image_cluster_${v}_north_day_w640_q75.webp`, data:w640.bytes});
+        E.push({name:root+`backplate_image_cluster/svgs/backplate_image_cluster_${v}_north.svg`, text:svgMask([`${v}-00-01`,`${v}-00-02`,`${v}-00-03`], "villa unit code")});
+        E.push({name:root+`backplate_image_villa/backplate_image_villa_${v}-00-01.${bx}`, data:wProj.bytes});
+        E.push({name:root+`backplate_image_villa/svgs/backplate_image_villa_${v}-00-01.svg`, text:svgMask([`${v}-00-01`], "villa unit code")});
+      }
+    }
+    E.push({name:root+`video_360-amenity/video_360-amenity_amenity-01.mp4`, text:""});
+  }
+  if(wantUnit) for(const t of towers){
+    R(`image_360_property_unit/${t}/`,`Unit-level 360s (unique views): ${t}-[floor]-[unit]/image_360_${t}-[ff]-[uu]_[vcode]_[scheme]_[floor]_[RoomName]_[n].jpg`);
+    if(wantDummy && types.length){
+      const uc = t.startsWith("v") ? `${t}-00-01` : `${t}-01-01`;
+      const [ulabel, uvc] = types[0];
+      E.push({name:root+`image_360_property_unit/${t}/${uc}/readme.txt`, text:`SAMPLE unit ${uc} (type ${ulabel}, ${uvc}) - one placeholder per room. Duplicate this folder per real unit from the stacking plan; add _2, _3 images per room as rendered.`});
+      for(const [r] of roomsForType(ulabel, uvc))
+        E.push({name:root+`image_360_property_unit/${t}/${uc}/image_360_${uc}_${uvc}_s1_0_${r}_1.jpg`, data:w360.bytes});
+    }
+  }
   E.push({name:root+"expected_files.csv", text:manifest.join("\n")});
   E.push({name:root+"readme.txt", text:`${root.slice(0,-1)}\nShape: ${shape}. Generated by PropVR Content QC structure generator.\nStage 1: artists fill intake/. Stage 2: pipeline renames to deployment folders. Stage 3: python3 propvr_qc.py validates - 0 errors required for hand-over.`});
   const blob = makeZip(E);
