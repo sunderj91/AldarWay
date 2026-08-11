@@ -77,6 +77,27 @@ ul.clean{margin:6px 0 6px 20px}ul.clean li{margin:5px 0}
 .fcside{width:270px;flex:none;background:#fff;border:1px solid var(--line);border-radius:var(--r-md);padding:14px;position:sticky;top:74px;align-self:flex-start;max-height:calc(100vh - 95px);overflow:auto;box-shadow:var(--shadow-sm)}
 .fcmain{flex:1;min-width:0;background:#fff;border:1px solid var(--line);border-radius:var(--r-md);padding:14px;box-shadow:var(--shadow-sm)}
 @media (max-width:900px){#fcStudio.on{flex-direction:column}.fcside{position:static;width:100%;max-height:none}}
+#pvView{text-align:center}
+#pvView.dev-tablet{width:1024px;max-width:100%;height:768px;margin:0 auto;border:6px solid #151521;border-radius:18px}
+#pvView.dev-mobile{width:390px;height:720px;margin:0 auto;border:8px solid #151521;border-radius:28px}
+#pvOverlay svg path{cursor:pointer}
+.pvlabel{position:absolute;transform:translate(-50%,-50%);background:rgba(28,28,40,.92);color:#fff;font-size:13px;font-weight:700;padding:5px 14px;border-radius:9px;white-space:nowrap;cursor:pointer;border:1px solid rgba(255,255,255,.3)}
+.pvlabel:hover{background:var(--blue)}
+.pvhot{position:absolute;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.28);border:2px solid rgba(255,255,255,.95);box-shadow:0 2px 8px rgba(0,0,0,.45),inset 0 0 8px rgba(255,255,255,.55);cursor:pointer;pointer-events:auto;transition:transform .15s,background .15s}
+.pvhot:hover{background:rgba(255,255,255,.65);transform:translate(-50%,-50%) scale(1.25)}
+.pvhot .pvhotlbl{position:absolute;left:50%;top:-32px;transform:translateX(-50%);background:rgba(21,21,33,.82);color:#fff;font-size:11px;font-weight:700;padding:3px 11px;border-radius:999px;white-space:nowrap;pointer-events:none;letter-spacing:.02em}
+.pvhot:hover .pvhotlbl{display:block!important}
+#pvPano{transition:opacity .35s ease}
+.pvchip{font-family:inherit;padding:5px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:700;cursor:pointer}
+.pvchip.on{background:var(--grad-primary);color:#fff;border-color:transparent}
+.wtsub{display:none}.wtsub.active{display:block}
+#svStudio{display:none}#svStudio.on{display:flex}
+#svView{height:68vh;overflow:auto;border:1px solid var(--line);border-radius:var(--r-sm);background:#f2f3f5}
+.svid{display:flex;justify-content:space-between;gap:8px;padding:4px 8px;border-radius:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;cursor:default}
+.svid:hover{background:#EEF3FF}
+.svid.sel{background:var(--blue);color:#fff}
+.svid.moved span:first-child::after{content:" •";color:var(--accent-gold)}
+.svid.bad{color:var(--err);font-weight:700}
 #fcView{height:68vh;overflow:auto;border:1px solid var(--line);border-radius:var(--r-sm);background:#f2f3f5}
 .fczoom{display:flex;align-items:center;gap:4px;background:var(--bg-ink);border-radius:var(--r-pill);padding:4px 8px}
 .fczoom button{font-family:inherit;background:transparent;color:#fff;border:none;font-size:15px;font-weight:800;width:28px;height:24px;cursor:pointer;border-radius:6px}
@@ -108,8 +129,8 @@ ul.clean{margin:6px 0 6px 20px}ul.clean li{margin:5px 0}
 <nav>
   <button class="active" data-tab="standard">01 · Naming Standard</button>
   <button data-tab="generator">02 · Structure Generator</button>
-  <button data-tab="renamer">03 · Renamer</button>
-  <button data-tab="csvmaker">04 · Floorplan CSV</button>
+  <button data-tab="csvmaker">03 · Workflow Tools</button>
+  <button data-tab="preview">04 · Journey Preview</button>
   <button data-tab="validator">05 · Validator</button>
   <button data-tab="checklist">06 · PM Checklist</button>
 </nav>
@@ -353,50 +374,20 @@ camera CSVs and floorplan CSVs can never drift apart. The validator (tab 02) is 
 </section>
 
 <!-- ============ TAB : RENAMER ============ -->
-<section class="tab" id="tab-renamer">
-  <h2>Stage 1.5 — Renamer (messy source → deployment names)</h2>
-  <p class="lead">Point it at the raw delivery folder (one subfolder per unit type, any naming). It auto-suggests the variation code per type, maps every room through the canonical dictionary, previews every rename, then <b>writes renamed copies</b> into a destination you pick — streamed at disk speed, originals untouched. Floorplan-label CSVs are reformatted and Max camera CSVs converted (m→cm, heading→direction) on the fly.</p>
-  <div class="card">
-    <p><button class="btn" id="rnPick" type="button">1 · Choose source folder…</button>
-       <input type="file" id="rnInput" webkitdirectory multiple style="display:none">
-       <span class="small" id="rnSrcMsg"></span></p>
-    <div id="rnUnits" style="display:none">
-      <h3>Unit types found — confirm variation codes</h3>
-      <div id="rnUnitRows"></div>
-      <h3>Options</h3>
-      <p class="small">
-        Scheme <input class="gi" id="rnScheme" value="s1" style="width:56px"> ·
-        Floor <input class="gi" id="rnFloor" value="0" style="width:44px"> ·
-        <label><input type="checkbox" id="rnMaster" checked> first bedroom → MasterBedroom (when no explicit master)</label> ·
-        <label><input type="checkbox" id="rnMerge" checked> merge corridor sub-rooms into parent (appended after)</label> ·
-        <label><input type="checkbox" id="rnLayer" checked> drop PSD "Layer N" rows from floorplan CSVs</label>
-      </p>
-      <p><button class="btn" id="rnBuild" type="button">2 · Build rename plan</button></p>
-    </div>
-    <div id="rnUnmapped" style="display:none"></div>
-    <div id="rnPlanWrap" style="display:none">
-      <h3>Plan preview <span class="small" id="rnPlanStats"></span></h3>
-      <div id="rnPlan" style="max-height:380px;overflow:auto"></div>
-      <p style="margin-top:12px">
-        <button class="btn" id="rnExec" type="button">3 · Copy renamed files into destination…</button>
-        <button class="btn ghost" id="rnCsv" type="button">Download mapping CSV</button>
-        <button class="btn ghost" id="rnSh" type="button">Download rename script (mac)</button>
-        <button class="btn ghost" id="rnBat" type="button">Download rename script (win)</button>
-      </p>
-      <p class="small" id="rnExecNote"></p>
-      <div id="rnProg" class="small"></div>
-    </div>
-  </div>
-  <div class="card"><h3 style="margin-top:0">Automation downloads</h3>
-  <p class="small">For pipeline/CI use of rename + validation without the browser:</p>
-  <p><button class="btn ghost" onclick="dlEmbed('propvr_qc.py')">⇩ propvr_qc.py</button>
-     <button class="btn ghost" onclick="dlEmbed('PropVR-QC.command')">⇩ macOS launcher (.command)</button>
-     <button class="btn ghost" onclick="dlEmbed('propvr_qc.bat')">⇩ Windows launcher (.bat)</button></p></div>
-</section>
+
 
 <!-- ============ TAB : FLOORPLAN CSV MAKER ============ -->
 <section class="tab" id="tab-csvmaker">
-  <h2>Floorplan CSV creator — click-to-place labels</h2>
+  
+  <h2>Workflow tools</h2>
+  <div class="shape-sel" id="wtSub" style="margin-top:6px">
+    <button class="active" data-wt="csv">Floorplan CSV creator</button>
+    <button data-wt="ren">Renamer</button>
+    <button data-wt="svg">SVG mask checker</button>
+    <button data-wt="upd">Content updater</button>
+  </div>
+  <div class="wtsub active" id="wt-csv">
+<h2>Floorplan CSV creator — click-to-place labels</h2>
   <p class="lead">Upload the unit-plan render — the variation code and floor are read from the filename when possible. Pick a tag on the left (search to filter), click its spot on the plan, download the correctly-named CSV. Coordinates auto-normalize to the 4096 grid.</p>
   <div class="card">
     <div class="frow">
@@ -443,6 +434,198 @@ camera CSVs and floorplan CSVs can never drift apart. The validator (tab 02) is 
       </div>
     </div>
   </div>
+  </div>
+  <div class="wtsub" id="wt-ren">
+
+  <h2>Stage 1.5 — Renamer (messy source → deployment names)</h2>
+  <p class="lead">Point it at the raw delivery folder (one subfolder per unit type, any naming). It auto-suggests the variation code per type, maps every room through the canonical dictionary, previews every rename, then <b>writes renamed copies</b> into a destination you pick — streamed at disk speed, originals untouched. CSVs and camera xlsx are <b>rename-only</b>: room/camera names are normalized through the dictionary, every numeric value passes through untouched.</p>
+  <div class="card">
+    <p><button class="btn" id="rnPick" type="button">1 · Choose source folder…</button>
+       <input type="file" id="rnInput" webkitdirectory multiple style="display:none">
+       <span class="small" id="rnSrcMsg"></span></p>
+    <div id="rnUnits" style="display:none">
+      <h3>Unit types found — confirm variation codes</h3>
+      <div id="rnUnitRows"></div>
+      <h3>Options</h3>
+      <p class="small">
+        Scheme <input class="gi" id="rnScheme" value="s1" style="width:56px"> ·
+        Floor <input class="gi" id="rnFloor" value="0" style="width:44px"> ·
+        <label><input type="checkbox" id="rnMaster" checked> first bedroom → MasterBedroom (when no explicit master)</label> ·
+        <label><input type="checkbox" id="rnMerge" checked> merge corridor sub-rooms into parent (appended after)</label> ·
+        <label><input type="checkbox" id="rnLayer" checked> drop PSD "Layer N" rows from floorplan CSVs</label> ·
+        <label><input type="checkbox" id="rnStrict" checked> <b>strict master dictionary</b> — drop every CSV row whose room is not in the master dictionary (Layer N + anomalies), so the 3-way match is clean</label>
+      </p>
+      <p><button class="btn" id="rnBuild" type="button">2 · Build rename plan</button></p>
+    </div>
+    <div id="rnUnmapped" style="display:none"></div>
+    <div id="rnPlanWrap" style="display:none">
+      <h3>Plan preview <span class="small" id="rnPlanStats"></span></h3>
+      <div id="rnPlan" style="max-height:380px;overflow:auto"></div>
+      <p style="margin-top:12px">
+        <button class="btn" id="rnExec" type="button">3 · Copy renamed files into destination…</button>
+        <button class="btn ghost" id="rnCsv" type="button">Download mapping CSV</button>
+        <button class="btn ghost" id="rnSh" type="button">Download rename script (mac)</button>
+        <button class="btn ghost" id="rnBat" type="button">Download rename script (win)</button>
+      </p>
+      <p class="small" id="rnExecNote"></p>
+      <div id="rnProg" class="small"></div>
+    </div>
+  </div>
+  <div class="card"><h3 style="margin-top:0">Automation downloads</h3>
+  <p class="small">For pipeline/CI use of rename + validation without the browser:</p>
+  <p><button class="btn ghost" onclick="dlEmbed('propvr_qc.py')">⇩ propvr_qc.py</button>
+     <button class="btn ghost" onclick="dlEmbed('PropVR-QC.command')">⇩ macOS launcher (.command)</button>
+     <button class="btn ghost" onclick="dlEmbed('propvr_qc.bat')">⇩ Windows launcher (.bat)</button></p></div>
+
+  </div>
+  <div class="wtsub" id="wt-svg">
+  <h2 style="margin-top:10px">SVG mask checker — verify overlap before it reaches the PM</h2>
+  <p class="lead">Load the backplate render and its SVG selection mask. The mask is drawn over the image so you can confirm every path sits on the right tower/floor/unit — with automatic checks on resolution match, path ids and id patterns. Everything stays in the browser.</p>
+  <div class="card">
+    <div class="frow">
+      <label>Backplate image<input class="gi" type="file" id="svImgIn" accept="image/*"></label>
+      <label>SVG mask<input class="gi" type="file" id="svSvgIn" accept=".svg"></label>
+      <label>Mask opacity<input type="range" id="svOpacity" min="0" max="100" value="55" style="width:140px"></label>
+    </div>
+    <div id="svChecks"></div>
+  </div>
+  <div id="svStudio" style="gap:18px;align-items:flex-start">
+    <div class="fcside">
+      <h3 style="margin-top:0;font-size:14px">Path ids <span class="small" id="svIdCount"></span></h3>
+      <div id="svIds" style="max-height:52vh;overflow:auto"></div>
+      <p class="small" style="margin-top:8px">Hover an id to flash its path · click an id to select it for editing. Ids must equal the tower / floor / unit code the click should open.</p>
+      <div style="border-top:1px solid var(--line);margin-top:10px;padding-top:10px">
+        <label class="small" style="font-weight:700"><input type="checkbox" id="svEdit"> Edit mode (nudge / drag paths)</label>
+        <div id="svEditPanel" style="display:none;margin-top:8px">
+          <p class="small">Selected: <b id="svSelId" style="color:var(--blue)">—</b></p>
+          <div class="frow" style="gap:8px">
+            <label class="small">dX<input class="gi" id="svDx" type="number" value="0" style="width:70px"></label>
+            <label class="small">dY<input class="gi" id="svDy" type="number" value="0" style="width:70px"></label>
+            <label class="small">Step<select class="gi" id="svStep"><option>1</option><option selected>5</option><option>20</option></select></label>
+          </div>
+          <div style="display:flex;gap:4px;margin:8px 0">
+            <button class="btn ghost" style="padding:4px 12px" id="svL" type="button">◀</button>
+            <button class="btn ghost" style="padding:4px 12px" id="svU" type="button">▲</button>
+            <button class="btn ghost" style="padding:4px 12px" id="svD" type="button">▼</button>
+            <button class="btn ghost" style="padding:4px 12px" id="svR" type="button">▶</button>
+            <button class="btn ghost" style="padding:4px 10px;margin-left:auto" id="svReset" type="button">Reset</button>
+          </div>
+          <p class="small">Or drag paths directly on the plan · arrow keys nudge the selected path.</p>
+          <button class="btn" id="svDownload" type="button" style="width:100%">Download revised SVG</button>
+        </div>
+      </div>
+    </div>
+    <div class="fcmain">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <div class="fczoom">
+          <button type="button" id="svZoomOut">−</button>
+          <span id="svZoomPct">100%</span>
+          <button type="button" id="svZoomIn">+</button>
+          <button type="button" id="svZoomFit">Fit</button>
+        </div>
+        <span class="small">Blue = mask paths · hover a path id on the left to highlight</span>
+      </div>
+      <div id="svView">
+        <div id="svWrap" style="position:relative;display:inline-block;line-height:0">
+          <img id="svImg" style="display:block">
+          <div id="svOverlay" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+  <div class="wtsub" id="wt-upd">
+  <h2 style="margin-top:10px">Content updater — replace placeholders, get the SQL</h2>
+  <p class="lead">The skeleton is the CMS: every placeholder is a named slot. This tool is the only write path a TL needs — match new renders to their slots, preview, copy in place, and download a change log + a SQL script for the platform DB. Nothing is guessed: every action is shown before it runs.</p>
+  <div class="card">
+    <h3 style="margin-top:0">Step 1 · Folders</h3>
+    <div class="frow">
+      <label>Deployment folder (with placeholders)<input class="gi" type="file" id="upDep" webkitdirectory multiple></label>
+      <label>New content (files or folder)<input class="gi" type="file" id="upNew" webkitdirectory multiple></label>
+    </div>
+    <p class="small" id="upDepMsg"></p>
+  </div>
+  <div class="card" id="upMatchCard" style="display:none">
+    <h3 style="margin-top:0">Step 2 · Match preview</h3>
+    <div class="frow">
+      <label>Assign unmatched files to variation<select class="gi" id="upVcode"></select></label>
+      <label>Scheme<input class="gi" id="upScheme" value="s1" style="width:60px"></label>
+      <label>Floor<input class="gi" id="upFloor" value="0" style="width:50px"></label>
+      <button class="btn ghost" id="upRematch" type="button" style="align-self:flex-end">Re-match</button>
+    </div>
+    <div id="upTable" style="max-height:340px;overflow:auto;margin-top:8px"></div>
+    <p class="small" id="upStats"></p>
+    <p><button class="btn" id="upExec" type="button">3 · Copy into deployment folder…</button>
+       <button class="btn ghost" id="upLog" type="button">Download change log CSV</button>
+       <button class="btn ghost" id="upSql" type="button">Download SQL script</button></p>
+    <p class="small" id="upExecMsg"></p>
+  </div>
+  <div class="card" id="upSqlCard" style="display:none">
+    <h3 style="margin-top:0">SQL template <span class="small">(edit once to match your DB schema — tokens fill per file)</span></h3>
+    <textarea class="gi" id="upSqlTpl" rows="6" style="width:100%;font-family:ui-monospace,Menlo,monospace;font-size:12px">-- {{date}} · {{action}} · {{kind}}
+UPDATE assets
+   SET file_bytes = {{size_bytes}}, updated_at = NOW(), version = version + 1
+ WHERE path = '{{path}}';
+INSERT INTO assets (path, kind, variation_code, unit_code, room, image_index, scheme, floor, file_bytes, updated_at)
+SELECT '{{path}}','{{kind}}','{{vcode}}','{{unitcode}}','{{room}}',{{index}},'{{scheme}}',{{floor}},{{size_bytes}},NOW()
+ WHERE NOT EXISTS (SELECT 1 FROM assets WHERE path = '{{path}}');</textarea>
+    <p class="small">Available tokens: <span class="tok">{{path}}</span><span class="tok">{{filename}}</span><span class="tok">{{kind}}</span><span class="tok">{{vcode}}</span><span class="tok">{{vcode_nof}}</span><span class="tok">{{unitcode}}</span><span class="tok">{{room}}</span><span class="tok">{{index}}</span><span class="tok">{{scheme}}</span><span class="tok">{{floor}}</span><span class="tok">{{size_bytes}}</span><span class="tok">{{action}}</span><span class="tok">{{date}}</span> — empty values render as NULL/''. Share the real schema with the platform owner to bake it in permanently.</p>
+  </div>
+  </div>
+</section>
+
+<!-- ============ TAB : JOURNEY PREVIEW ============ -->
+<section class="tab" id="tab-preview">
+  <h2>Journey preview — test the full flow on your local assets</h2>
+  <p class="lead">Pick the deployment folder and walk the exact buyer journey the platform will build: project hero → tower (SVG mask click) → floor → floorplate → unit → floorplan labels → <b>Enter</b> → live 360 tour. Every hop uses your real files — if a click dead-ends, the missing/misnamed asset is reported. Nothing uploads.</p>
+  <div class="card">
+    <div class="frow">
+      <label>Deployment folder<input class="gi" type="file" id="pvDir" webkitdirectory multiple></label>
+      <label>Scheme<select class="gi" id="pvScheme"><option>s1</option></select></label>
+    </div>
+    <div id="pvInventory"></div>
+  </div>
+  <div id="pvStage" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin:10px 0;flex-wrap:wrap">
+      <button class="btn ghost" id="pvBack" type="button">← Back</button>
+      <div class="small" id="pvCrumb" style="font-weight:700"></div>
+      <span class="small" id="pvHint" style="margin-left:auto"></span>
+      <div class="fczoom">
+        <button type="button" id="pvZoomOut">−</button>
+        <span id="pvZoomPct">100%</span>
+        <button type="button" id="pvZoomIn">+</button>
+        <button type="button" id="pvZoomFit">Fit</button>
+        <button type="button" id="pvZoom100">1:1</button>
+      </div>
+      <div class="chips" data-group="pvdev" style="margin:0">
+        <button type="button" data-v="web" class="on">Web</button><button type="button" data-v="tablet">Tablet</button><button type="button" data-v="mobile">Mobile</button>
+      </div>
+    </div>
+    <div class="chips" data-group="pvjump" style="margin:0 0 8px">
+      <span class="small" style="align-self:center;font-weight:700;margin-right:4px">Jump to scene:</span>
+      <button type="button" data-j="project">Hero</button><button type="button" data-j="tower">Tower</button><button type="button" data-j="floorplate">Floorplate</button><button type="button" data-j="floorplan">Floorplan</button><button type="button" data-j="pano">360 Tour</button><button type="button" data-j="amenity">Amenities</button>
+    </div>
+    <div class="card" style="padding:10px">
+      <div id="pvView" style="position:relative;height:72vh;overflow:auto;background:#151521;border-radius:10px">
+        <div id="pvWrap" style="position:relative;display:inline-block;line-height:0">
+          <img id="pvImg" style="display:block;width:100%">
+          <div id="pvOverlay" style="position:absolute;left:0;top:0;width:100%;height:100%"></div>
+        </div>
+        <canvas id="pvPano" style="display:none;width:100%;height:100%;cursor:grab"></canvas>
+        <video id="pvVideo" style="display:none;width:100%;height:100%;background:#000" controls muted></video>
+        <div id="pvHot" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;display:none"></div>
+        <div id="pvScenePill" style="position:absolute;left:14px;top:14px;background:rgba(20,20,32,.85);color:#fff;font-size:13px;font-weight:700;padding:7px 16px;border-radius:10px;display:none;z-index:5"></div>
+        <div id="pvEmpty" style="display:none;position:absolute;inset:0;z-index:4;background:#151521;color:#8f9bbd;align-items:center;justify-content:center;text-align:center">
+          <div><div style="font-size:44px;line-height:1;margin-bottom:12px">🖼️</div>
+          <div style="font-size:16px;font-weight:800;color:#c9d2ee" id="pvEmptyTitle">No asset found</div>
+          <div class="small" id="pvEmptySub" style="margin-top:6px"></div></div>
+        </div>
+      </div>
+      <div id="pvBar" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center"></div>
+    </div>
+    <div class="card" id="pvMissing" style="display:none;border-color:#F5C6C0"><b style="color:var(--err)">Scene dependencies flagged by the validator</b> <span class="small">— errors block the journey, warnings degrade it, info is nice-to-have. Same rules as tab 04, scoped to what this scene needs.</span><div id="pvMissingList" class="small" style="margin-top:6px;line-height:1.9"></div></div>
+  </div>
 </section>
 
 <!-- ============ TAB 2 : VALIDATOR ============ -->
@@ -479,14 +662,15 @@ camera CSVs and floorplan CSVs can never drift apart. The validator (tab 02) is 
     <h3>Per-variation sync matrix</h3>
     <div id="matrix"></div>
   </div>
-</section>
-
   <div class="card"><h3 style="margin-top:0">Automation / CI downloads (embedded — this HTML is the only file you distribute)</h3>
   <p class="small">For build servers or PMs who prefer double-click scripts. Everything downloads from inside this page:</p>
   <p><button class="btn ghost" onclick="dlEmbed('propvr_qc.py')">⇩ propvr_qc.py</button>
      <button class="btn ghost" onclick="dlEmbed('PropVR-QC.command')">⇩ macOS launcher (.command)</button>
      <button class="btn ghost" onclick="dlEmbed('propvr_qc.bat')">⇩ Windows launcher (.bat)</button></p>
   <p class="small">macOS: put both files together, double-click the .command, drag the project folder in. Windows: drag the project folder onto the .bat.</p></div>
+</section>
+
+  
 
 <!-- ============ TAB 3 : CHECKLIST ============ -->
 <section class="tab" id="tab-checklist">
@@ -498,7 +682,7 @@ camera CSVs and floorplan CSVs can never drift apart. The validator (tab 02) is 
 </main>
 
 <script>
-const PYQC = "#!/usr/bin/env python3\n\"\"\"\nPropVR Content QC \u2014 deployment naming & sync validator (local CLI).\nZero dependencies. Walks the project folder IN PLACE (nothing copied) \u2014 built for 20-30 GB projects.\n\nUsage:\n    python3 propvr_qc.py /path/to/project_1-0-1_uae_abu-dhabi_thecanopies\n    python3 propvr_qc.py <folder> --out /path/to/reports    (default: alongside the project)\n\nOutputs qc_report.html + qc_report.csv. Exit code 1 if any errors (CI-friendly).\n\"\"\"\nimport os, re, sys, csv, html, datetime\n\n# ---------------- config ----------------\nROOMS = {\"MasterBedroom\",\"MasterBathroom\",\"Bedroom\",\"Bedroom1\",\"Bedroom2\",\"Bedroom3\",\"Bedroom4\",\n         \"Bathroom\",\"Bathroom1\",\"Bathroom2\",\"Bathroom3\",\"PowderRoom\",\"Kitchen\",\"Living\",\"Dining\",\n         \"Foyer\",\"Corridor\",\"Laundry\",\"LaundryCloset\",\"MaidRoom\",\"MaidBathroom\",\"Study\",\"Balcony\",\n         \"LivingBalcony\",\"MasterBedroomBalcony\",\"MasterBedroomWardrobe\",\"BedroomBathroom\",\"FamilyRoom\",\n         \"Majlis\",\"Terrace\",\"Store\",\"Pantry\",\"DriverRoom\",\"Garage\",\"Garden\",\"Roof\",\"Entrance\",\n         \"Pool\",\"Bar\",\"Lobby\",\"ShowKitchen\",\"GameMediaRoom\",\"MediaRoom\",\"MultipurposeRoom\",\"DryCloset\",\n         \"ElevatorLobby\",\"MainElevatorLobby\",\"LivingDiningSpace\",\"Gym\",\"Office\",\"MaidsRoom\",\"MaidsBathroom\"}\nTOP = {\"backplate_image_project\",\"backplate_image_masterplan\",\"backplate_image_tower\",\n       \"backplate_image_tower-floorplate\",\"backplate_video_tower\",\"backplate_image_villa\",\n       \"backplate_image_cluster\",\"backplate_image_floorplan_property_variation\",\n       \"csv_camera_property_variation\",\"csv_floorplan_property_variation\",\n       \"model_360-collision_property_variation\",\"image_360_property_variation\",\n       \"image_360_property_unit\",\"video_360-amenity\",\"_source_camera_data\",\"intake\"}\nJUNK = re.compile(r\"^(\\.DS_Store|Thumbs\\.db|desktop\\.ini|~\\$.*|\\._.*)$\", re.I)\nVC  = r\"(a|v|d|th)_(s|p)_(st|\\d+f?_st|\\d+bf?)_([a-z]\\d{0,2})\"\nVCN = r\"(a|v|d|th)_(s|p)_(st|\\d+_st|\\d+b)_([a-z]\\d{0,2})\"\nUC  = r\"[a-z][a-z0-9]*-\\d{2}-\\d{2}\"\nRX = dict(\n    root    = re.compile(r\"^project_\\d+(-\\d+)*_[a-z-]+_[a-z-]+_[a-z0-9-]+$\"),\n    img_var = re.compile(rf\"^image_360_({VC})_(s\\d+)_(\\d+)_([A-Za-z0-9]+)_(\\d+)\\.jpe?g$\"),\n    img_unit= re.compile(rf\"^image_360_({UC})_({VC})_(s\\d+)_(\\d+)_([A-Za-z0-9]+)_(\\d+)\\.jpe?g$\"),\n    cam     = re.compile(rf\"^csv_camera_({VCN})\\.csv$\"),\n    fp      = re.compile(rf\"^csv_floorplan_({VCN})_(\\d+)\\.csv$\"),\n    glb     = re.compile(rf\"^model_360-collision_({VCN})_(\\d+)\\.glb$\"),\n    bpf     = re.compile(rf\"^backplate_image_floorplan_({VCN})_(s\\d+)_(\\d+)\\.(webp|jpg)$\"),\n    camrow  = re.compile(r\"^(\\d+)_([A-Z][A-Za-z0-9]*)_(\\d+)$\"),\n    room    = re.compile(r\"^[A-Z][A-Za-z0-9]*$\"),\n    unitdir = re.compile(rf\"^{UC}$\"),\n    charset = re.compile(r\"[^A-Za-z0-9._\\-]\"))\n\nknown_room = lambda r: r in ROOMS or r.rstrip(\"0123456789\") in ROOMS\nstrip_f = lambda c: re.sub(r\"(\\d+)f_st\", r\"\\1_st\", re.sub(r\"(\\d+)bf\", r\"\\1b\", c))\n\nfindings = []\ndef F(sev, code, path, msg, fix=\"\"):\n    findings.append(dict(sev=sev, code=code, path=path, msg=msg, fix=fix))\n\nclass Var:\n    def __init__(s):\n        s.imgs, s.cams, s.fps = {}, {}, {}\n        s.glbs, s.bps, s.codes, s.heights = set(), set(), set(), []\n\ndef main():\n    args = [a for a in sys.argv[1:] if not a.startswith(\"--\")]\n    if not args:\n        print(__doc__); sys.exit(2)\n    root = os.path.abspath(args[0].rstrip(\"/\\\\\"))\n    outdir = os.path.dirname(root)\n    if \"--out\" in sys.argv:\n        outdir = sys.argv[sys.argv.index(\"--out\") + 1]\n    rootname = os.path.basename(root)\n    if not RX[\"root\"].match(rootname):\n        F(\"warning\",\"S1\", rootname, \"Folder is not a full project root (project_[ver]_[country]_[city]_[slug]) - validating contents anyway.\",\n          \"e.g. project_1-0-1_uae_abu-dhabi_thecanopies\")\n\n    vars_, csv_jobs = {}, []\n    V = lambda k: vars_.setdefault(k, Var())\n    nfiles = nimgs = passed = 0\n\n    for dirpath, dirnames, filenames in os.walk(root):\n        rel_dir = os.path.relpath(dirpath, root).replace(\"\\\\\",\"/\")\n        rel_dir = \"\" if rel_dir == \".\" else rel_dir\n        for name in filenames:\n            nfiles += 1\n            rel = f\"{rel_dir}/{name}\" if rel_dir else name\n            segs = rel.split(\"/\")\n            if JUNK.match(name):\n                F(\"warning\",\"S4\", rel, \"Junk file - must not ship in deployment.\", \"Delete before hand-over.\"); continue\n            if name.lower() == \"readme.txt\" or name == \"expected_files.csv\":\n                continue\n            if segs[0] == \"intake\":\n                continue\n            for s in segs:\n                if RX[\"charset\"].search(s):\n                    F(\"error\",\"S3\", rel, f'Illegal character(s) in \"{s}\" - only letters, digits, \"_\", \"-\", \".\" allowed. No spaces.',\n                      \"Rename: _ separates tokens, - replaces spaces.\")\n            if len(segs) == 1:\n                if not re.match(r\"readme\", name, re.I) and not name.startswith(\"qc_report\"):\n                    F(\"warning\",\"S2\", rel, \"Loose file at project root.\", \"Files live inside asset-type folders.\")\n                continue\n            top = segs[0]\n            if top not in TOP:\n                F(\"error\",\"S2\", rel, f'Unknown top-level folder \"{top}\".', \"Use only the canonical folder set.\"); continue\n            size = 0\n            try: size = os.path.getsize(os.path.join(dirpath, name))\n            except OSError: pass\n\n            if top == \"image_360_property_variation\":\n                m = RX[\"img_var\"].match(name)\n                if not m:\n                    F(\"error\",\"N1\", rel, \"360 name must be image_360_[vcode]_[scheme]_[floor]_[Room]_[n].jpg\"); continue\n                vcode, scheme, room, n = m.group(1), m.group(6), m.group(8), int(m.group(9))\n                k = strip_f(vcode); v = V(k); v.codes.add(vcode)\n                if len(segs) == 3 and segs[1] != vcode:\n                    F(\"error\",\"N2\", rel, f'File vcode \"{vcode}\" != folder \"{segs[1]}\".', \"Folder must equal the variation code.\")\n                if not known_room(room):\n                    F(\"warning\",\"N3\", rel, f'Room \"{room}\" not in the canonical dictionary.', \"Fix name or add to dictionary with sign-off.\")\n                key = (scheme, room, n)\n                if key in v.imgs: F(\"error\",\"N4\", rel, f\"Duplicate image {scheme} {room}_{n} for {k}.\")\n                v.imgs[key] = rel; nimgs += 1; passed += 1\n                if size > 6*1024*1024: F(\"warning\",\"Q1\", rel, f\"360 image is {size/1048576:.1f} MB - check export (8000x4000 JPG is usually 0.7-3 MB).\")\n            elif top == \"image_360_property_unit\":\n                if len(segs) > 3 and not RX[\"unitdir\"].match(segs[2]):\n                    F(\"error\",\"N5\", f\"{segs[0]}/{segs[1]}/{segs[2]}\", f'Unit folder \"{segs[2]}\" must be [tower]-[floor]-[unit], e.g. b1-06-09.')\n                if re.search(r\"\\.jpe?g$\", name, re.I):\n                    m = RX[\"img_unit\"].match(name)\n                    if not m:\n                        F(\"error\",\"N1\", rel, \"Unit 360 must be image_360_[unit-code]_[vcode]_[scheme]_[floor]_[Room]_[n].jpg\"); continue\n                    if len(segs) > 3 and m.group(1) != segs[2]:\n                        F(\"error\",\"N2\", rel, f'File unit-code \"{m.group(1)}\" != folder \"{segs[2]}\".')\n                    if not known_room(m.group(9)):\n                        F(\"warning\",\"N3\", rel, f'Room \"{m.group(9)}\" not in dictionary.')\n                    nimgs += 1; passed += 1\n            elif top == \"csv_camera_property_variation\":\n                if not name.lower().endswith(\".csv\"):\n                    if not re.match(r\"readme\", name, re.I): F(\"warning\",\"S5\", rel, \"Non-CSV file in csv_camera folder.\")\n                    continue\n                m = RX[\"cam\"].match(name)\n                if not m:\n                    extra = \" Contains a flipped (f) code - the app auto-flips CSVs.\" if re.search(r\"\\dbf|\\df_st\", name) else \"\"\n                    F(\"error\",\"N6\", rel, \"Camera CSV must be csv_camera_[vcode-no-f].csv.\" + extra); continue\n                V(m.group(1)); csv_jobs.append((\"cam\", m.group(1), None, os.path.join(dirpath,name), rel)); passed += 1\n            elif top == \"csv_floorplan_property_variation\":\n                if not name.lower().endswith(\".csv\"):\n                    if not re.match(r\"readme\", name, re.I): F(\"warning\",\"S5\", rel, \"Non-CSV file in csv_floorplan folder.\")\n                    continue\n                m = RX[\"fp\"].match(name)\n                if not m:\n                    extra = \" Contains a flipped (f) code.\" if re.search(r\"\\dbf|\\df_st\", name) else \"\"\n                    F(\"error\",\"N7\", rel, \"Floorplan CSV must be csv_floorplan_[vcode-no-f]_[floor].csv.\" + extra); continue\n                V(m.group(1)); csv_jobs.append((\"fp\", m.group(1), m.group(6), os.path.join(dirpath,name), rel)); passed += 1\n            elif top == \"model_360-collision_property_variation\":\n                m = RX[\"glb\"].match(name)\n                if not m:\n                    if not re.match(r\"readme\", name, re.I):\n                        F(\"error\",\"N8\", rel, \"Collision model must be model_360-collision_[vcode-no-f]_[floor].glb\",\n                          \"Flipped variants share the unflipped model.\")\n                    continue\n                V(m.group(1)).glbs.add(m.group(6)); passed += 1\n            elif top == \"backplate_image_floorplan_property_variation\":\n                m = RX[\"bpf\"].match(name)\n                if not m:\n                    if not re.match(r\"readme\", name, re.I) and \"_w640\" not in name:\n                        F(\"error\",\"N9\", rel, \"Floorplan backplate must be backplate_image_floorplan_[vcode-no-f]_[scheme]_[floor].webp\")\n                    continue\n                V(m.group(1)).bps.add((m.group(6), m.group(7)))\n                if m.group(8) == \"jpg\":\n                    F(\"warning\",\"Q2\", rel, \"Backplate is JPG - production spec is WebP 4096x4096 60-200 KB.\", \"Convert to webp.\")\n                elif size and not (40*1024 <= size <= 250*1024):\n                    F(\"warning\",\"Q3\", rel, f\"Backplate is {size//1024} KB - target 60-200 KB.\")\n                passed += 1\n            else:\n                passed += 1\n\n    # ---------------- CSV contents ----------------\n    for kind, k, floor, full, rel in csv_jobs:\n        try:\n            text = open(full, encoding=\"utf-8-sig\").read()\n        except Exception as e:\n            F(\"error\",\"C0\", rel, f\"Cannot read CSV: {e}\"); continue\n        rows = [r for r in text.splitlines() if r.strip()]\n        v = V(k)\n        if kind == \"cam\":\n            for i, r in enumerate(rows):\n                c = r.split(\",\")\n                if i == 0 and re.search(r\"name|location\", r, re.I):\n                    F(\"error\",\"C1\", rel, \"Camera CSV has a header row - spec is headerless.\"); continue\n                if len(c) != 10:\n                    F(\"error\",\"C2\", rel, f\"Row {i+1}: {len(c)} columns (need 10: name + 9 numbers).\"); continue\n                m = RX[\"camrow\"].match(c[0])\n                if not m:\n                    F(\"error\",\"C3\", rel, f'Row {i+1}: bad camera name \"{c[0]}\" (need floor_RoomName_n, CamelCase).'); continue\n                if not known_room(m.group(2)):\n                    F(\"warning\",\"N3\", rel, f'Row {i+1}: room \"{m.group(2)}\" not in dictionary.')\n                bad = [j for j in range(1,10) if not re.match(r\"^-?\\d+(\\.\\d+)?$\", c[j].strip())]\n                if bad: F(\"error\",\"C4\", rel, f\"Row {i+1}: non-numeric column(s) {bad}.\")\n                key = (m.group(2), int(m.group(3)))\n                if key in v.cams: F(\"error\",\"C5\", rel, f\"Duplicate camera {c[0]}.\")\n                v.cams[key] = rel\n                try: v.heights.append(float(c[3]))\n                except ValueError: pass\n        else:\n            names = {}\n            for i, r in enumerate(rows):\n                c = r.split(\",\")\n                if i == 0 and re.search(r\"layer|center\", r, re.I):\n                    F(\"error\",\"C1\", rel, \"Floorplan CSV has a header row - spec is headerless RoomName,x,y.\"); continue\n                if len(c) != 3:\n                    F(\"error\",\"C2\", rel, f\"Row {i+1}: {len(c)} columns (need 3).\"); continue\n                nm = c[0].strip()\n                if re.match(r\"^layer\\s\", nm, re.I):\n                    F(\"error\",\"C6\", rel, f'Row {i+1}: PSD junk label \"{nm}\".', \"Remove or rename to a real room.\"); continue\n                if nm != c[0]:\n                    F(\"error\",\"C7\", rel, f'Row {i+1}: leading/trailing spaces in \"{c[0]}\".')\n                if not RX[\"room\"].match(nm):\n                    F(\"error\",\"C3\", rel, f'Row {i+1}: \"{nm}\" is not CamelCase.')\n                elif not known_room(nm):\n                    F(\"warning\",\"N3\", rel, f'Row {i+1}: room \"{nm}\" not in dictionary.')\n                try:\n                    x, y = float(c[1]), float(c[2])\n                    if not (0 <= x <= 4096 and 0 <= y <= 4096):\n                        F(\"warning\",\"C8\", rel, f\"Row {i+1}: ({x:g}, {y:g}) outside the 4096 grid.\")\n                except ValueError:\n                    F(\"error\",\"C4\", rel, f\"Row {i+1}: coordinates not numeric.\")\n                names[nm] = True\n            v.fps[floor] = names\n\n    # ---------------- cross-sync ----------------\n    matrix = {}\n    for k, v in sorted(vars_.items()):\n        schemes = sorted({key[0] for key in v.imgs})\n        cam_keys = set(v.cams)\n        img_rooms, cam_rooms = {}, {}\n        for (s, r, n) in v.imgs: img_rooms.setdefault((s, r), []).append(n)\n        for (r, n) in v.cams: cam_rooms.setdefault(r, []).append(n)\n        if v.imgs and not v.cams: F(\"error\",\"X1\", k, \"Variation has 360 images but no camera CSV.\", f\"Add csv_camera_{k}.csv\")\n        if v.cams and not v.imgs: F(\"warning\",\"X2\", k, \"Camera CSV exists but no 360 images found.\")\n        if v.cams:\n            for (s, r, n) in v.imgs:\n                if (r, n) not in cam_keys:\n                    F(\"error\",\"X3\", v.imgs[(s, r, n)], f\"Image {r}_{n} (scheme {s}) has no camera row - unreachable in the tour.\",\n                      \"Add the camera or remove the image.\")\n        if v.imgs:\n            for (r, n) in cam_keys:\n                for s in schemes:\n                    if (s, r, n) not in v.imgs:\n                        F(\"error\",\"X4\", f\"csv_camera_{k}.csv\", f\"Camera {r}_{n} has no 360 image in scheme {s} - broken navigation node.\",\n                          \"Render the image for every scheme or remove the row.\")\n        for (s, r), ns in img_rooms.items():\n            ns.sort()\n            if ns[0] != 1:\n                F(\"error\",\"X5\", k, f\"Room {r} (scheme {s}): lowest image index is {ns[0]} - index 1 is the landing image and must exist.\",\n                  \"Renumber so the in-room shot is _1.\")\n            if any(b - a > 1 for a, b in zip(ns, ns[1:])):\n                F(\"warning\",\"X6\", k, f\"Room {r} (scheme {s}): image index gap ({','.join(map(str,ns))}).\")\n        if v.imgs:\n            entry_rooms = {key[1] for key in v.imgs}\n            if not ({\"Foyer\",\"Entrance\"} & entry_rooms):\n                F(\"warning\",\"X12\", k, \"No Foyer/Entrance 360 - the tour entry point is undefined and the app will land on an arbitrary room.\",\n                  \"Add a Foyer camera + 360 (index 1 = the entry view).\")\n            if not v.glbs: F(\"error\",\"X7\", k, \"No collision model for this variation.\", f\"Add model_360-collision_{k}_0.glb\")\n            if not v.bps:  F(\"warning\",\"X8\", k, \"No floorplan backplate for this variation.\")\n            else:\n                for s in schemes:\n                    if not any(b[0] == s for b in v.bps):\n                        F(\"warning\",\"X8\", k, f\"No floorplan backplate for scheme {s}.\")\n            if not v.fps:  F(\"error\",\"X9\", k, \"No floorplan CSV for this variation.\", f\"Add csv_floorplan_{k}_0.csv\")\n        for floor, names in v.fps.items():\n            for nm in names:\n                if cam_rooms and nm not in cam_rooms and RX[\"room\"].match(nm):\n                    F(\"warning\",\"X10\", f\"csv_floorplan_{k}_{floor}.csv\", f'Label \"{nm}\" has no camera - dead label on the floorplan.',\n                      \"Add a camera/360 or remove after sign-off.\")\n            for r in cam_rooms:\n                if r not in names:\n                    F(\"info\",\"X11\", f\"csv_floorplan_{k}_{floor}.csv\", f\"Room {r} has cameras but no floorplan label - not clickable from the plan.\")\n        bad_h = [h for h in v.heights if not (100 <= h <= 220)]\n        if bad_h: F(\"warning\",\"Q4\", f\"csv_camera_{k}.csv\", f\"{len(bad_h)} camera(s) outside 100-220 cm height - check units are cm in collision-model space.\")\n        matrix[k] = dict(codes=\", \".join(sorted(v.codes)) or k, imgs=len(v.imgs), cams=len(v.cams),\n                         labels=sum(len(n) for n in v.fps.values()), glb=len(v.glbs), bp=len(v.bps))\n\n    # ---------------- reports ----------------\n    sev_rank = {\"error\":0, \"warning\":1, \"info\":2}\n    findings.sort(key=lambda x: (sev_rank[x[\"sev\"]], x[\"code\"], x[\"path\"]))\n    n_err = sum(1 for x in findings if x[\"sev\"]==\"error\")\n    n_warn = sum(1 for x in findings if x[\"sev\"]==\"warning\")\n\n    csv_path = os.path.join(outdir, \"qc_report.csv\")\n    with open(csv_path, \"w\", newline=\"\", encoding=\"utf-8\") as fh:\n        w = csv.writer(fh); w.writerow([\"severity\",\"rule\",\"path\",\"finding\",\"fix\"])\n        for x in findings: w.writerow([x[\"sev\"], x[\"code\"], x[\"path\"], x[\"msg\"], x[\"fix\"]])\n\n    E = html.escape\n    pill = {\"error\":\"err\",\"warning\":\"warn\",\"info\":\"info\"}\n    rows_html = \"\".join(\n        f'<tr><td><span class=\"pill {pill[x[\"sev\"]]}\">{x[\"sev\"]}</span></td><td><code>{x[\"code\"]}</code></td>'\n        f'<td><code>{E(x[\"path\"])}</code></td><td>{E(x[\"msg\"])}</td><td class=\"small\">{E(x[\"fix\"])}</td></tr>'\n        for x in findings)\n    mx_html = \"\".join(\n        f'<tr><td><code>{k}</code></td><td class=\"small\"><code>{E(m[\"codes\"])}</code></td><td>{m[\"imgs\"]}</td>'\n        f'<td>{m[\"cams\"]}</td><td>{m[\"labels\"]}</td><td>{\"OK\" if m[\"glb\"] else \"-\"}</td><td>{\"OK\" if m[\"bp\"] else \"-\"}</td></tr>'\n        for k, m in matrix.items())\n    badge = ('<div class=\"badge pass\">PASS - 0 errors. Content is deployment-ready.</div>' if n_err == 0 else\n             f'<div class=\"badge fail\">FAIL - {n_err} error(s), {n_warn} warning(s). Fix all errors before hand-over.</div>')\n    report = f\"\"\"<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>PropVR QC - {E(rootname)}</title><style>\n:root{{--blue:#0D54FE;--ink:#262626;--line:#E9EEF3;--err:#D93025;--warn:#B26A00;--ok:#188038;--info:#0D54FE}}\nbody{{font-family:\"Rethink Sans\",-apple-system,\"Segoe UI\",Arial,sans-serif;color:var(--ink);margin:0;background:#FCFCFC;font-size:14px}}\nheader{{background:#151521;color:#fff;padding:22px 32px}}header h1{{margin:0;font-size:20px}}header p{{margin:4px 0 0;color:#B3E5FC;font-size:12.5px}}\n.rib{{height:4px;background:linear-gradient(135deg,#1A73E8,#34C5F0 50%,#6EFFC5)}}\nmain{{max-width:1180px;margin:0 auto;padding:24px 32px 60px}}\n.badge{{border-radius:14px;padding:14px 20px;font-size:17px;font-weight:800;margin:14px 0}}\n.badge.pass{{background:linear-gradient(180deg,#6C68FD,#0D54FE);color:#fff}}.badge.fail{{background:#FDE7E5;color:var(--err);border:1px solid #F5C6C0}}\n.tiles{{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:16px 0}}\n.tile{{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 16px}}\n.tile .n{{font-size:28px;font-weight:800}}.tile .l{{font-size:11px;color:#666;font-weight:600;text-transform:uppercase}}\ntable{{border-collapse:collapse;width:100%;margin:10px 0;background:#fff;font-size:13px}}\nth{{background:var(--blue);color:#fff;text-align:left;padding:7px 10px}}td{{border:1px solid var(--line);padding:6px 10px;vertical-align:top}}\ntr:nth-child(even) td{{background:#FCFCFC}}code{{font-size:12px}}\n.pill{{border-radius:999px;padding:2px 10px;font-size:11.5px;font-weight:700}}\n.pill.err{{background:#FDE7E5;color:var(--err)}}.pill.warn{{background:#FFF1D6;color:var(--warn)}}.pill.info{{background:#E8F0FE;color:var(--info)}}\n.small{{font-size:12px;color:#666}}h2{{font-size:18px;margin:26px 0 6px}}</style></head><body>\n<header><h1>PropVR Content QC report</h1><p>{E(rootname)} &middot; {datetime.datetime.now().strftime(\"%Y-%m-%d %H:%M\")} &middot; propvr_qc.py</p></header><div class=\"rib\"></div><main>\n{badge}\n<div class=\"tiles\"><div class=\"tile\"><div class=\"n\" style=\"color:var(--blue)\">{nfiles}</div><div class=\"l\">files scanned</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--blue)\">{len(vars_)}</div><div class=\"l\">variations</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--blue)\">{nimgs}</div><div class=\"l\">360 images</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--err)\">{n_err}</div><div class=\"l\">errors</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--warn)\">{n_warn}</div><div class=\"l\">warnings</div></div></div>\n<h2>Findings</h2>\n{'<table><tr><th style=\"width:86px\">Severity</th><th style=\"width:52px\">Rule</th><th>Path / scope</th><th>Finding</th><th>Fix</th></tr>' + rows_html + '</table>' if findings else '<p>No findings - fully clean.</p>'}\n<h2>Per-variation sync matrix</h2>\n<table><tr><th>Variation (no-f)</th><th>Codes seen</th><th>360s</th><th>Cameras</th><th>Labels</th><th>GLB</th><th>Backplate</th></tr>{mx_html}</table>\n<p class=\"small\">Rule groups: S structure &middot; N naming &middot; C csv content &middot; X cross-sync &middot; Q quality. Full standard: propvr-content-standard.html</p>\n</main></body></html>\"\"\"\n    html_path = os.path.join(outdir, \"qc_report.html\")\n    open(html_path, \"w\", encoding=\"utf-8\").write(report)\n\n    print(f\"\\nPropVR Content QC - {rootname}\")\n    print(f\"  files: {nfiles}   variations: {len(vars_)}   360s: {nimgs}\")\n    print(f\"  ERRORS: {n_err}   warnings: {n_warn}   info: {len(findings)-n_err-n_warn}\")\n    for x in findings[:15]:\n        print(f\"  [{x['sev'][:4].upper()}] {x['code']:4s} {x['path']}: {x['msg']}\")\n    if len(findings) > 15: print(f\"  ... {len(findings)-15} more - see report\")\n    print(f\"  report: {html_path}\\n          {csv_path}\")\n    sys.exit(1 if n_err else 0)\n\nif __name__ == \"__main__\":\n    main()\n";
+const PYQC = "#!/usr/bin/env python3\n\"\"\"\nPropVR Content QC \u2014 deployment naming & sync validator (local CLI).\nZero dependencies. Walks the project folder IN PLACE (nothing copied) \u2014 built for 20-30 GB projects.\n\nUsage:\n    python3 propvr_qc.py /path/to/project_1-0-1_uae_abu-dhabi_thecanopies\n    python3 propvr_qc.py <folder> --out /path/to/reports    (default: alongside the project)\n\nOutputs qc_report.html + qc_report.csv. Exit code 1 if any errors (CI-friendly).\n\"\"\"\nimport os, re, sys, csv, html, datetime\n\n# ---------------- config ----------------\nROOMS = {\"MasterBedroom\",\"MasterBathroom\",\"Bedroom\",\"Bedroom1\",\"Bedroom2\",\"Bedroom3\",\"Bedroom4\",\n         \"Bathroom\",\"Bathroom1\",\"Bathroom2\",\"Bathroom3\",\"PowderRoom\",\"Kitchen\",\"Living\",\"Dining\",\n         \"Foyer\",\"Corridor\",\"Laundry\",\"LaundryCloset\",\"MaidRoom\",\"MaidBathroom\",\"Study\",\"Balcony\",\n         \"LivingBalcony\",\"MasterBedroomBalcony\",\"MasterBedroomWardrobe\",\"BedroomBathroom\",\"FamilyRoom\",\n         \"Majlis\",\"Terrace\",\"Store\",\"Pantry\",\"DriverRoom\",\"Garage\",\"Garden\",\"Roof\",\"Entrance\",\n         \"Pool\",\"Bar\",\"Lobby\",\"ShowKitchen\",\"GameMediaRoom\",\"MediaRoom\",\"MultipurposeRoom\",\"DryCloset\",\n         \"ElevatorLobby\",\"MainElevatorLobby\",\"LivingDiningSpace\",\"Gym\",\"Office\",\"MaidsRoom\",\"MaidsBathroom\"}\nTOP = {\"backplate_image_project\",\"backplate_image_masterplan\",\"backplate_image_tower\",\n       \"backplate_image_tower-floorplate\",\"backplate_video_tower\",\"backplate_image_villa\",\n       \"backplate_image_cluster\",\"backplate_image_floorplan_property_variation\",\n       \"csv_camera_property_variation\",\"csv_floorplan_property_variation\",\n       \"model_360-collision_property_variation\",\"image_360_property_variation\",\n       \"image_360_property_unit\",\"video_360-amenity\",\"_source_camera_data\",\"intake\"}\nJUNK = re.compile(r\"^(\\.DS_Store|Thumbs\\.db|desktop\\.ini|~\\$.*|\\._.*)$\", re.I)\nVC  = r\"(a|v|d|th)_(s|p)_(st|\\d+f?_st|\\d+bf?)_([a-z]\\d{0,2})\"\nVCN = r\"(a|v|d|th)_(s|p)_(st|\\d+_st|\\d+b)_([a-z]\\d{0,2})\"\nUC  = r\"[a-z][a-z0-9]*-\\d{2}-\\d{2}\"\nRX = dict(\n    root    = re.compile(r\"^project_\\d+(-\\d+)*_[a-z-]+_[a-z-]+_[a-z0-9-]+$\"),\n    img_var = re.compile(rf\"^image_360_({VC})_(s\\d+)_(\\d+)_([A-Za-z0-9]+)_(\\d+)\\.jpe?g$\"),\n    img_unit= re.compile(rf\"^image_360_({UC})_({VC})_(s\\d+)_(\\d+)_([A-Za-z0-9]+)_(\\d+)\\.jpe?g$\"),\n    cam     = re.compile(rf\"^csv_camera_({VCN})\\.csv$\"),\n    fp      = re.compile(rf\"^csv_floorplan_({VCN})_(\\d+)\\.csv$\"),\n    glb     = re.compile(rf\"^model_360-collision_({VCN})_(\\d+)\\.glb$\"),\n    bpf     = re.compile(rf\"^backplate_image_floorplan_({VCN})_(s\\d+)_(\\d+)\\.(webp|jpg)$\"),\n    camrow  = re.compile(r\"^(\\d+)_([A-Z][A-Za-z0-9]*)_(\\d+)$\"),\n    room    = re.compile(r\"^[A-Z][A-Za-z0-9]*$\"),\n    unitdir = re.compile(rf\"^{UC}$\"),\n    charset = re.compile(r\"[^A-Za-z0-9._\\-]\"))\n\nknown_room = lambda r: r in ROOMS or r.rstrip(\"0123456789\") in ROOMS\nstrip_f = lambda c: re.sub(r\"(\\d+)f_st\", r\"\\1_st\", re.sub(r\"(\\d+)bf\", r\"\\1b\", c))\n\nfindings = []\n# default known fix per rule \u2014 used whenever a finding has no specific fix text\nFIXES = {\n \"S1\": \"Rename the root to project_[ver]_[country]_[city]_[slug], e.g. project_1-0-1_uae_abu-dhabi_thecanopies.\",\n \"S2\": \"Move the file into its canonical asset-type folder.\",\n \"S3\": \"Rename: lowercase, _ as separator, - instead of spaces; no other characters.\",\n \"S4\": \"Delete Thumbs.db / .DS_Store / ~$ files before hand-over.\",\n \"S5\": \"Only .csv files belong in this folder \u2014 move or delete the file.\",\n \"N1\": \"Regenerate the name with the Renamer tool \u2014 exact grammar in the standard.\",\n \"N2\": \"Make the code in the filename equal to its folder name.\",\n \"N3\": \"Use a dictionary room or add the new room to the dictionary with sign-off.\",\n \"N4\": \"Two files map to the same room+index \u2014 renumber the extra shot _2, _3...\",\n \"N5\": \"Rename the unit folder to [tower]-[floor]-[unit], e.g. b1-06-09.\",\n \"N6\": \"Rename to csv_camera_[vcode-no-f].csv \u2014 strip the f (the app auto-flips CSVs).\",\n \"N7\": \"Rename to csv_floorplan_[vcode-no-f]_[floor].csv \u2014 strip the f.\",\n \"N8\": \"Rename to model_360-collision_[vcode-no-f]_[floor].glb.\",\n \"N9\": \"Rename to backplate_image_floorplan_[vcode-no-f]_[scheme]_[floor].webp.\",\n \"C1\": \"Delete the header row \u2014 both CSV types are headerless.\",\n \"C2\": \"Re-export the CSV: camera rows = name + 9 numbers; floorplan rows = RoomName,x,y.\",\n \"C3\": \"Rename the row to floor_RoomName_n with CamelCase RoomName matching image filenames exactly.\",\n \"C4\": \"Fix the non-numeric cell (comma inside a number? locale decimal separator?).\",\n \"C5\": \"Delete the duplicate row \u2014 one row per camera.\",\n \"C6\": \"Delete the PSD 'Layer N' row, or rename it to a real room before shipping.\",\n \"C7\": \"Trim the spaces around the room name.\",\n \"C8\": \"Re-export label coordinates on the 4096x4096 PSD canvas.\",\n \"X1\": \"Export cameras from Max and convert via the Content updater tool.\",\n \"X2\": \"Add the 360 set for this variation, or delete the orphan camera CSV.\",\n \"X3\": \"Add a camera row for this image, or remove/renumber the image.\",\n \"X4\": \"Render the missing scheme image, or delete the camera row.\",\n \"X5\": \"Renumber so the in-room landing shot is _1.\",\n \"X6\": \"Renumber to close the gap \u2014 indexes run consecutively from 1.\",\n \"X7\": \"Export the collision GLB (shared by flipped variants, no f in the name).\",\n \"X8\": \"Export the floorplan backplate webp for every scheme.\",\n \"X9\": \"Create it with the Floorplan CSV creator tool.\",\n \"X10\": \"Add a camera + 360 for the label, or delete the label after sign-off.\",\n \"X11\": \"Add the label row in the floorplan CSV so the room is clickable from the plan.\",\n \"X12\": \"Add a Foyer/Entrance camera + 360 (index 1 = the entry view).\",\n \"Q1\": \"Re-export the JPG at ~8000x4000, quality ~80 (0.7-3 MB).\",\n \"Q2\": \"Convert to WebP 4096x4096, 60-200 KB.\",\n \"Q3\": \"Re-compress the backplate into the 60-200 KB window.\",\n \"Q4\": \"Camera height should be eye level ~150 cm \u2014 check the Max export units are cm.\",\n}\ndef F(sev, code, path, msg, fix=\"\"):\n    findings.append(dict(sev=sev, code=code, path=path, msg=msg, fix=fix or FIXES.get(code, \"\")))\n\nclass Var:\n    def __init__(s):\n        s.imgs, s.cams, s.fps = {}, {}, {}\n        s.glbs, s.bps, s.codes, s.heights = set(), set(), set(), []\n\ndef main():\n    args = [a for a in sys.argv[1:] if not a.startswith(\"--\")]\n    if not args:\n        print(__doc__); sys.exit(2)\n    root = os.path.abspath(args[0].rstrip(\"/\\\\\"))\n    outdir = os.path.dirname(root)\n    if \"--out\" in sys.argv:\n        outdir = sys.argv[sys.argv.index(\"--out\") + 1]\n    rootname = os.path.basename(root)\n    if not RX[\"root\"].match(rootname):\n        F(\"warning\",\"S1\", rootname, \"Folder is not a full project root (project_[ver]_[country]_[city]_[slug]) - validating contents anyway.\",\n          \"e.g. project_1-0-1_uae_abu-dhabi_thecanopies\")\n\n    vars_, csv_jobs = {}, []\n    V = lambda k: vars_.setdefault(k, Var())\n    nfiles = nimgs = passed = 0\n\n    for dirpath, dirnames, filenames in os.walk(root):\n        rel_dir = os.path.relpath(dirpath, root).replace(\"\\\\\",\"/\")\n        rel_dir = \"\" if rel_dir == \".\" else rel_dir\n        for name in filenames:\n            nfiles += 1\n            rel = f\"{rel_dir}/{name}\" if rel_dir else name\n            segs = rel.split(\"/\")\n            if JUNK.match(name):\n                F(\"warning\",\"S4\", rel, \"Junk file - must not ship in deployment.\", \"Delete before hand-over.\"); continue\n            if name.lower() == \"readme.txt\" or name == \"expected_files.csv\":\n                continue\n            if segs[0] == \"intake\":\n                continue\n            for s in segs:\n                if RX[\"charset\"].search(s):\n                    F(\"error\",\"S3\", rel, f'Illegal character(s) in \"{s}\" - only letters, digits, \"_\", \"-\", \".\" allowed. No spaces.',\n                      \"Rename: _ separates tokens, - replaces spaces.\")\n            if len(segs) == 1:\n                if not re.match(r\"readme\", name, re.I) and not name.startswith(\"qc_report\"):\n                    F(\"warning\",\"S2\", rel, \"Loose file at project root.\", \"Files live inside asset-type folders.\")\n                continue\n            top = segs[0]\n            if top not in TOP:\n                F(\"error\",\"S2\", rel, f'Unknown top-level folder \"{top}\".', \"Use only the canonical folder set.\"); continue\n            size = 0\n            try: size = os.path.getsize(os.path.join(dirpath, name))\n            except OSError: pass\n\n            if top == \"image_360_property_variation\":\n                m = RX[\"img_var\"].match(name)\n                if not m:\n                    F(\"error\",\"N1\", rel, \"360 name must be image_360_[vcode]_[scheme]_[floor]_[Room]_[n].jpg\"); continue\n                vcode, scheme, room, n = m.group(1), m.group(6), m.group(8), int(m.group(9))\n                k = strip_f(vcode); v = V(k); v.codes.add(vcode)\n                if len(segs) == 3 and segs[1] != vcode:\n                    F(\"error\",\"N2\", rel, f'File vcode \"{vcode}\" != folder \"{segs[1]}\".', \"Folder must equal the variation code.\")\n                if not known_room(room):\n                    F(\"warning\",\"N3\", rel, f'Room \"{room}\" not in the canonical dictionary.', \"Fix name or add to dictionary with sign-off.\")\n                key = (scheme, room, n)\n                if key in v.imgs: F(\"error\",\"N4\", rel, f\"Duplicate image {scheme} {room}_{n} for {k}.\")\n                v.imgs[key] = rel; nimgs += 1; passed += 1\n                if size > 6*1024*1024: F(\"warning\",\"Q1\", rel, f\"360 image is {size/1048576:.1f} MB - check export (8000x4000 JPG is usually 0.7-3 MB).\")\n            elif top == \"image_360_property_unit\":\n                if len(segs) > 3 and not RX[\"unitdir\"].match(segs[2]):\n                    F(\"error\",\"N5\", f\"{segs[0]}/{segs[1]}/{segs[2]}\", f'Unit folder \"{segs[2]}\" must be [tower]-[floor]-[unit], e.g. b1-06-09.')\n                if re.search(r\"\\.jpe?g$\", name, re.I):\n                    m = RX[\"img_unit\"].match(name)\n                    if not m:\n                        F(\"error\",\"N1\", rel, \"Unit 360 must be image_360_[unit-code]_[vcode]_[scheme]_[floor]_[Room]_[n].jpg\"); continue\n                    if len(segs) > 3 and m.group(1) != segs[2]:\n                        F(\"error\",\"N2\", rel, f'File unit-code \"{m.group(1)}\" != folder \"{segs[2]}\".')\n                    if not known_room(m.group(9)):\n                        F(\"warning\",\"N3\", rel, f'Room \"{m.group(9)}\" not in dictionary.')\n                    nimgs += 1; passed += 1\n            elif top == \"csv_camera_property_variation\":\n                if not name.lower().endswith(\".csv\"):\n                    if not re.match(r\"readme\", name, re.I): F(\"warning\",\"S5\", rel, \"Non-CSV file in csv_camera folder.\")\n                    continue\n                m = RX[\"cam\"].match(name)\n                if not m:\n                    extra = \" Contains a flipped (f) code - the app auto-flips CSVs.\" if re.search(r\"\\dbf|\\df_st\", name) else \"\"\n                    F(\"error\",\"N6\", rel, \"Camera CSV must be csv_camera_[vcode-no-f].csv.\" + extra); continue\n                V(m.group(1)); csv_jobs.append((\"cam\", m.group(1), None, os.path.join(dirpath,name), rel)); passed += 1\n            elif top == \"csv_floorplan_property_variation\":\n                if not name.lower().endswith(\".csv\"):\n                    if not re.match(r\"readme\", name, re.I): F(\"warning\",\"S5\", rel, \"Non-CSV file in csv_floorplan folder.\")\n                    continue\n                m = RX[\"fp\"].match(name)\n                if not m:\n                    extra = \" Contains a flipped (f) code.\" if re.search(r\"\\dbf|\\df_st\", name) else \"\"\n                    F(\"error\",\"N7\", rel, \"Floorplan CSV must be csv_floorplan_[vcode-no-f]_[floor].csv.\" + extra); continue\n                V(m.group(1)); csv_jobs.append((\"fp\", m.group(1), m.group(6), os.path.join(dirpath,name), rel)); passed += 1\n            elif top == \"model_360-collision_property_variation\":\n                m = RX[\"glb\"].match(name)\n                if not m:\n                    if not re.match(r\"readme\", name, re.I):\n                        F(\"error\",\"N8\", rel, \"Collision model must be model_360-collision_[vcode-no-f]_[floor].glb\",\n                          \"Flipped variants share the unflipped model.\")\n                    continue\n                V(m.group(1)).glbs.add(m.group(6)); passed += 1\n            elif top == \"backplate_image_floorplan_property_variation\":\n                m = RX[\"bpf\"].match(name)\n                if not m:\n                    if not re.match(r\"readme\", name, re.I) and \"_w640\" not in name:\n                        F(\"error\",\"N9\", rel, \"Floorplan backplate must be backplate_image_floorplan_[vcode-no-f]_[scheme]_[floor].webp\")\n                    continue\n                V(m.group(1)).bps.add((m.group(6), m.group(7)))\n                if m.group(8) == \"jpg\":\n                    F(\"warning\",\"Q2\", rel, \"Backplate is JPG - production spec is WebP 4096x4096 60-200 KB.\", \"Convert to webp.\")\n                elif size and not (40*1024 <= size <= 250*1024):\n                    F(\"warning\",\"Q3\", rel, f\"Backplate is {size//1024} KB - target 60-200 KB.\")\n                passed += 1\n            else:\n                passed += 1\n\n    # ---------------- CSV contents ----------------\n    for kind, k, floor, full, rel in csv_jobs:\n        try:\n            text = open(full, encoding=\"utf-8-sig\").read()\n        except Exception as e:\n            F(\"error\",\"C0\", rel, f\"Cannot read CSV: {e}\"); continue\n        rows = [r for r in text.splitlines() if r.strip()]\n        v = V(k)\n        if kind == \"cam\":\n            for i, r in enumerate(rows):\n                c = r.split(\",\")\n                if i == 0 and re.search(r\"name|location\", r, re.I):\n                    F(\"error\",\"C1\", rel, \"Camera CSV has a header row - spec is headerless.\"); continue\n                if len(c) != 10:\n                    F(\"error\",\"C2\", rel, f\"Row {i+1}: {len(c)} columns (need 10: name + 9 numbers).\"); continue\n                m = RX[\"camrow\"].match(c[0])\n                if not m:\n                    F(\"error\",\"C3\", rel, f'Row {i+1}: bad camera name \"{c[0]}\" (need floor_RoomName_n, CamelCase).'); continue\n                if not known_room(m.group(2)):\n                    F(\"warning\",\"N3\", rel, f'Row {i+1}: room \"{m.group(2)}\" not in dictionary.')\n                bad = [j for j in range(1,10) if not re.match(r\"^-?\\d+(\\.\\d+)?$\", c[j].strip())]\n                if bad: F(\"error\",\"C4\", rel, f\"Row {i+1}: non-numeric column(s) {bad}.\")\n                key = (m.group(2), int(m.group(3)))\n                if key in v.cams: F(\"error\",\"C5\", rel, f\"Duplicate camera {c[0]}.\")\n                v.cams[key] = rel\n                try: v.heights.append(float(c[3]))\n                except ValueError: pass\n        else:\n            names = {}\n            for i, r in enumerate(rows):\n                c = r.split(\",\")\n                if i == 0 and re.search(r\"layer|center\", r, re.I):\n                    F(\"error\",\"C1\", rel, \"Floorplan CSV has a header row - spec is headerless RoomName,x,y.\"); continue\n                if len(c) != 3:\n                    F(\"error\",\"C2\", rel, f\"Row {i+1}: {len(c)} columns (need 3).\"); continue\n                nm = c[0].strip()\n                if re.match(r\"^layer\\s\", nm, re.I):\n                    F(\"error\",\"C6\", rel, f'Row {i+1}: PSD junk label \"{nm}\".', \"Remove or rename to a real room.\"); continue\n                if nm != c[0]:\n                    F(\"error\",\"C7\", rel, f'Row {i+1}: leading/trailing spaces in \"{c[0]}\".')\n                if not RX[\"room\"].match(nm):\n                    F(\"error\",\"C3\", rel, f'Row {i+1}: \"{nm}\" is not CamelCase.')\n                elif not known_room(nm):\n                    F(\"warning\",\"N3\", rel, f'Row {i+1}: room \"{nm}\" not in dictionary.')\n                try:\n                    x, y = float(c[1]), float(c[2])\n                    if not (0 <= x <= 4096 and 0 <= y <= 4096):\n                        F(\"warning\",\"C8\", rel, f\"Row {i+1}: ({x:g}, {y:g}) outside the 4096 grid.\")\n                except ValueError:\n                    F(\"error\",\"C4\", rel, f\"Row {i+1}: coordinates not numeric.\")\n                names[nm] = True\n            v.fps[floor] = names\n\n    # ---------------- cross-sync ----------------\n    matrix = {}\n    for k, v in sorted(vars_.items()):\n        schemes = sorted({key[0] for key in v.imgs})\n        cam_keys = set(v.cams)\n        img_rooms, cam_rooms = {}, {}\n        for (s, r, n) in v.imgs: img_rooms.setdefault((s, r), []).append(n)\n        for (r, n) in v.cams: cam_rooms.setdefault(r, []).append(n)\n        if v.imgs and not v.cams: F(\"error\",\"X1\", k, \"Variation has 360 images but no camera CSV.\", f\"Add csv_camera_{k}.csv\")\n        if v.cams and not v.imgs: F(\"warning\",\"X2\", k, \"Camera CSV exists but no 360 images found.\")\n        if v.cams:\n            for (s, r, n) in v.imgs:\n                if (r, n) not in cam_keys:\n                    F(\"error\",\"X3\", v.imgs[(s, r, n)], f\"Image {r}_{n} (scheme {s}) has no camera row - unreachable in the tour.\",\n                      \"Add the camera or remove the image.\")\n        if v.imgs:\n            for (r, n) in cam_keys:\n                for s in schemes:\n                    if (s, r, n) not in v.imgs:\n                        F(\"error\",\"X4\", f\"csv_camera_{k}.csv\", f\"Camera {r}_{n} has no 360 image in scheme {s} - broken navigation node.\",\n                          \"Render the image for every scheme or remove the row.\")\n        for (s, r), ns in img_rooms.items():\n            ns.sort()\n            if ns[0] != 1:\n                F(\"error\",\"X5\", k, f\"Room {r} (scheme {s}): lowest image index is {ns[0]} - index 1 is the landing image and must exist.\",\n                  \"Renumber so the in-room shot is _1.\")\n            if any(b - a > 1 for a, b in zip(ns, ns[1:])):\n                F(\"warning\",\"X6\", k, f\"Room {r} (scheme {s}): image index gap ({','.join(map(str,ns))}).\")\n        if v.imgs:\n            entry_rooms = {key[1] for key in v.imgs}\n            if not ({\"Foyer\",\"Entrance\"} & entry_rooms):\n                F(\"warning\",\"X12\", k, \"No Foyer/Entrance 360 - the tour entry point is undefined and the app will land on an arbitrary room.\",\n                  \"Add a Foyer camera + 360 (index 1 = the entry view).\")\n            if not v.glbs: F(\"error\",\"X7\", k, \"No collision model for this variation.\", f\"Add model_360-collision_{k}_0.glb\")\n            if not v.bps:  F(\"warning\",\"X8\", k, \"No floorplan backplate for this variation.\")\n            else:\n                for s in schemes:\n                    if not any(b[0] == s for b in v.bps):\n                        F(\"warning\",\"X8\", k, f\"No floorplan backplate for scheme {s}.\")\n            if not v.fps:  F(\"error\",\"X9\", k, \"No floorplan CSV for this variation.\", f\"Add csv_floorplan_{k}_0.csv\")\n        for floor, names in v.fps.items():\n            for nm in names:\n                if cam_rooms and nm not in cam_rooms and RX[\"room\"].match(nm):\n                    F(\"warning\",\"X10\", f\"csv_floorplan_{k}_{floor}.csv\", f'Label \"{nm}\" has no camera - dead label on the floorplan.',\n                      \"Add a camera/360 or remove after sign-off.\")\n            for r in cam_rooms:\n                if r not in names:\n                    F(\"info\",\"X11\", f\"csv_floorplan_{k}_{floor}.csv\", f\"Room {r} has cameras but no floorplan label - not clickable from the plan.\")\n        bad_h = [h for h in v.heights if not (100 <= h <= 220)]\n        if bad_h: F(\"warning\",\"Q4\", f\"csv_camera_{k}.csv\", f\"{len(bad_h)} camera(s) outside 100-220 cm height - check units are cm in collision-model space.\")\n        matrix[k] = dict(codes=\", \".join(sorted(v.codes)) or k, imgs=len(v.imgs), cams=len(v.cams),\n                         labels=sum(len(n) for n in v.fps.values()), glb=len(v.glbs), bp=len(v.bps))\n\n    # ---------------- reports ----------------\n    sev_rank = {\"error\":0, \"warning\":1, \"info\":2}\n    findings.sort(key=lambda x: (sev_rank[x[\"sev\"]], x[\"code\"], x[\"path\"]))\n    n_err = sum(1 for x in findings if x[\"sev\"]==\"error\")\n    n_warn = sum(1 for x in findings if x[\"sev\"]==\"warning\")\n\n    csv_path = os.path.join(outdir, \"qc_report.csv\")\n    with open(csv_path, \"w\", newline=\"\", encoding=\"utf-8\") as fh:\n        w = csv.writer(fh); w.writerow([\"severity\",\"rule\",\"path\",\"finding\",\"fix\"])\n        for x in findings: w.writerow([x[\"sev\"], x[\"code\"], x[\"path\"], x[\"msg\"], x[\"fix\"]])\n\n    E = html.escape\n    pill = {\"error\":\"err\",\"warning\":\"warn\",\"info\":\"info\"}\n    rows_html = \"\".join(\n        f'<tr><td><span class=\"pill {pill[x[\"sev\"]]}\">{x[\"sev\"]}</span></td><td><code>{x[\"code\"]}</code></td>'\n        f'<td><code>{E(x[\"path\"])}</code></td><td>{E(x[\"msg\"])}</td><td class=\"small\">{E(x[\"fix\"])}</td></tr>'\n        for x in findings)\n    mx_html = \"\".join(\n        f'<tr><td><code>{k}</code></td><td class=\"small\"><code>{E(m[\"codes\"])}</code></td><td>{m[\"imgs\"]}</td>'\n        f'<td>{m[\"cams\"]}</td><td>{m[\"labels\"]}</td><td>{\"OK\" if m[\"glb\"] else \"-\"}</td><td>{\"OK\" if m[\"bp\"] else \"-\"}</td></tr>'\n        for k, m in matrix.items())\n    badge = ('<div class=\"badge pass\">PASS - 0 errors. Content is deployment-ready.</div>' if n_err == 0 else\n             f'<div class=\"badge fail\">FAIL - {n_err} error(s), {n_warn} warning(s). Fix all errors before hand-over.</div>')\n    report = f\"\"\"<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>PropVR QC - {E(rootname)}</title><style>\n:root{{--blue:#0D54FE;--ink:#262626;--line:#E9EEF3;--err:#D93025;--warn:#B26A00;--ok:#188038;--info:#0D54FE}}\nbody{{font-family:\"Rethink Sans\",-apple-system,\"Segoe UI\",Arial,sans-serif;color:var(--ink);margin:0;background:#FCFCFC;font-size:14px}}\nheader{{background:#151521;color:#fff;padding:22px 32px}}header h1{{margin:0;font-size:20px}}header p{{margin:4px 0 0;color:#B3E5FC;font-size:12.5px}}\n.rib{{height:4px;background:linear-gradient(135deg,#1A73E8,#34C5F0 50%,#6EFFC5)}}\nmain{{max-width:1180px;margin:0 auto;padding:24px 32px 60px}}\n.badge{{border-radius:14px;padding:14px 20px;font-size:17px;font-weight:800;margin:14px 0}}\n.badge.pass{{background:linear-gradient(180deg,#6C68FD,#0D54FE);color:#fff}}.badge.fail{{background:#FDE7E5;color:var(--err);border:1px solid #F5C6C0}}\n.tiles{{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:16px 0}}\n.tile{{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 16px}}\n.tile .n{{font-size:28px;font-weight:800}}.tile .l{{font-size:11px;color:#666;font-weight:600;text-transform:uppercase}}\ntable{{border-collapse:collapse;width:100%;margin:10px 0;background:#fff;font-size:13px}}\nth{{background:var(--blue);color:#fff;text-align:left;padding:7px 10px}}td{{border:1px solid var(--line);padding:6px 10px;vertical-align:top}}\ntr:nth-child(even) td{{background:#FCFCFC}}code{{font-size:12px}}\n.pill{{border-radius:999px;padding:2px 10px;font-size:11.5px;font-weight:700}}\n.pill.err{{background:#FDE7E5;color:var(--err)}}.pill.warn{{background:#FFF1D6;color:var(--warn)}}.pill.info{{background:#E8F0FE;color:var(--info)}}\n.small{{font-size:12px;color:#666}}h2{{font-size:18px;margin:26px 0 6px}}</style></head><body>\n<header><h1>PropVR Content QC report</h1><p>{E(rootname)} &middot; {datetime.datetime.now().strftime(\"%Y-%m-%d %H:%M\")} &middot; propvr_qc.py</p></header><div class=\"rib\"></div><main>\n{badge}\n<div class=\"tiles\"><div class=\"tile\"><div class=\"n\" style=\"color:var(--blue)\">{nfiles}</div><div class=\"l\">files scanned</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--blue)\">{len(vars_)}</div><div class=\"l\">variations</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--blue)\">{nimgs}</div><div class=\"l\">360 images</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--err)\">{n_err}</div><div class=\"l\">errors</div></div>\n<div class=\"tile\"><div class=\"n\" style=\"color:var(--warn)\">{n_warn}</div><div class=\"l\">warnings</div></div></div>\n<h2>Findings</h2>\n{'<table><tr><th style=\"width:86px\">Severity</th><th style=\"width:52px\">Rule</th><th>Path / scope</th><th>Finding</th><th>Fix</th></tr>' + rows_html + '</table>' if findings else '<p>No findings - fully clean.</p>'}\n<h2>Per-variation sync matrix</h2>\n<table><tr><th>Variation (no-f)</th><th>Codes seen</th><th>360s</th><th>Cameras</th><th>Labels</th><th>GLB</th><th>Backplate</th></tr>{mx_html}</table>\n<p class=\"small\">Rule groups: S structure &middot; N naming &middot; C csv content &middot; X cross-sync &middot; Q quality. Full standard: propvr-content-standard.html</p>\n</main></body></html>\"\"\"\n    html_path = os.path.join(outdir, \"qc_report.html\")\n    open(html_path, \"w\", encoding=\"utf-8\").write(report)\n\n    print(f\"\\nPropVR Content QC - {rootname}\")\n    print(f\"  files: {nfiles}   variations: {len(vars_)}   360s: {nimgs}\")\n    print(f\"  ERRORS: {n_err}   warnings: {n_warn}   info: {len(findings)-n_err-n_warn}\")\n    for x in findings[:15]:\n        print(f\"  [{x['sev'][:4].upper()}] {x['code']:4s} {x['path']}: {x['msg']}\")\n    if len(findings) > 15: print(f\"  ... {len(findings)-15} more - see report\")\n    print(f\"  report: {html_path}\\n          {csv_path}\")\n    sys.exit(1 if n_err else 0)\n\nif __name__ == \"__main__\":\n    main()\n";
 const CMDW = "#!/bin/bash\n# PropVR Content QC - double-click launcher (macOS)\ncd \"$(dirname \"$0\")\"\necho \"PropVR Content QC\"\necho \"Drag the PROJECT FOLDER into this window, then press Enter:\"\nread -r RAW\nFOLDER=$(echo \"$RAW\" | sed \"s/^'//; s/'$//; s/\\\\\\\\//g\" | xargs)\nif [ ! -d \"$FOLDER\" ]; then echo \"Not a folder: $FOLDER\"; read -p \"Press Enter to close.\"; exit 1; fi\npython3 \"$(dirname \"$0\")/propvr_qc.py\" \"$FOLDER\"\nopen \"$(dirname \"$FOLDER\")/qc_report.html\" 2>/dev/null\nread -p \"Done. Press Enter to close.\"\n";
 const BATW = "@echo off\nrem PropVR Content QC - drag a project folder onto this file (Windows)\nif \"%~1\"==\"\" ( echo Drag the project folder onto this .bat file. & pause & exit /b 1 )\npy \"%~dp0propvr_qc.py\" \"%~1\" || python \"%~dp0propvr_qc.py\" \"%~1\"\nstart \"\" \"%~dp1qc_report.html\"\npause\n";
 
@@ -785,7 +969,48 @@ document.getElementById("gBtn").onclick = async () => {
 };
 /* ================= Validation engine ================= */
 let findings = [], stats = {}, matrixData = {};
-const F = (sev, code, path, msg, fix="") => findings.push({sev, code, path, msg, fix});
+/* default known fix per rule — used whenever a finding has no specific fix text */
+const FIXES = {
+  S1:"Rename the root to project_[ver]_[country]_[city]_[slug], e.g. project_1-0-1_uae_abu-dhabi_thecanopies.",
+  S2:"Move the file into its canonical asset-type folder (tab 01 structure).",
+  S3:"Rename: lowercase, _ as separator, - instead of spaces; no other characters.",
+  S4:"Delete Thumbs.db / .DS_Store / ~$ files before hand-over.",
+  S5:"Only .csv files belong in this folder — move or delete the file.",
+  N1:"Regenerate the name with the Renamer (Workflow tools) — exact grammar in tab 01 → Nomenclature.",
+  N2:"Make the code in the filename equal to its folder name — regenerate with the Renamer.",
+  N3:"Use a dictionary room (tab 01) or add the new room to the dictionary with sign-off.",
+  N4:"Two files map to the same room+index — renumber the extra shot _2, _3….",
+  N5:"Rename the unit folder to [tower]-[floor]-[unit], e.g. b1-06-09.",
+  N6:"Rename to csv_camera_[vcode-no-f].csv — strip the f (the app auto-flips CSVs).",
+  N7:"Rename to csv_floorplan_[vcode-no-f]_[floor].csv — strip the f.",
+  N8:"Rename to model_360-collision_[vcode-no-f]_[floor].glb.",
+  N9:"Rename to backplate_image_floorplan_[vcode-no-f]_[scheme]_[floor].webp.",
+  C1:"Delete the header row — both CSV types are headerless.",
+  C2:"Re-export the CSV: camera rows = name + 9 numbers; floorplan rows = RoomName,x,y.",
+  C3:"Rename the row to floor_RoomName_n with CamelCase RoomName matching the image filenames exactly.",
+  C4:"Fix the non-numeric cell (comma inside a number? locale decimal separator?).",
+  C5:"Delete the duplicate row — one row per camera.",
+  C6:"Delete the PSD 'Layer N' row, or rename it to a real room before shipping.",
+  C7:"Trim the spaces around the room name.",
+  C8:"Re-export label coordinates on the 4096×4096 PSD canvas.",
+  X1:"Export cameras from Max and convert via Workflow tools → Content updater.",
+  X2:"Add the 360 set for this variation, or delete the orphan camera CSV.",
+  X3:"Add a camera row for this image, or remove/renumber the image.",
+  X4:"Render the missing scheme image, or delete the camera row.",
+  X5:"Renumber so the in-room landing shot is _1.",
+  X6:"Renumber to close the gap — indexes run consecutively from 1.",
+  X7:"Export the collision GLB (shared by flipped variants, no f in the name).",
+  X8:"Export the floorplan backplate webp for every scheme.",
+  X9:"Create it with Workflow tools → Floorplan CSV creator.",
+  X10:"Add a camera + 360 for the label, or delete the label after sign-off.",
+  X11:"Add the label row in the floorplan CSV so the room is clickable from the plan.",
+  X12:"Add a Foyer/Entrance camera + 360 (index 1 = the entry view).",
+  Q1:"Re-export the JPG at ~8000×4000, quality ~80 (0.7–3 MB).",
+  Q2:"Convert to WebP 4096×4096, 60–200 KB.",
+  Q3:"Re-compress the backplate into the 60–200 KB window.",
+  Q4:"Camera height should be eye level ~150 cm — check the Max export units are cm."
+};
+const F = (sev, code, path, msg, fix="") => findings.push({sev, code, path, msg, fix: fix || FIXES[code] || ""});
 
 async function runValidation(files){
   findings = []; matrixData = {};
@@ -1092,6 +1317,7 @@ document.getElementById("rnBuild").onclick = () => {
   const scheme = document.getElementById("rnScheme").value.trim(), floor = document.getElementById("rnFloor").value.trim();
   const wantMaster = document.getElementById("rnMaster").checked, wantMerge = document.getElementById("rnMerge").checked;
   const dropLayer = document.getElementById("rnLayer").checked;
+  const strict = document.getElementById("rnStrict").checked;
   const vcodes = {}; document.querySelectorAll(".rnVc").forEach(i => vcodes[i.dataset.unit] = i.value.trim());
   const unmapped = new Set(); rnPlanRows = [];
   const byUnit = {};
@@ -1135,9 +1361,9 @@ document.getElementById("rnBuild").onclick = () => {
     if(glb) rnPlanRows.push({unit, src:glb.rel, file:glb.file, dst:`model_360-collision_property_variation/model_360-collision_${nf}_${floor}.glb`, kind:"glb"});
     if(fpImg){ const ext = fpImg.rel.split(".").pop().toLowerCase();
       rnPlanRows.push({unit, src:fpImg.rel, file:fpImg.file, dst:`backplate_image_floorplan_property_variation/backplate_image_floorplan_${nf}_${scheme}_${floor}.${ext==="webp"?"webp":"jpg"}`, kind:"backplate"}); }
-    if(labelCsv) rnPlanRows.push({unit, src:labelCsv.rel, file:labelCsv.file, dst:`csv_floorplan_property_variation/csv_floorplan_${nf}_${floor}.csv`, kind:"fpcsv", meta:{shift, dropLayer, floor}});
-    if(camCsv) rnPlanRows.push({unit, src:camCsv.rel, file:camCsv.file, dst:`csv_camera_property_variation/csv_camera_${nf}.csv`, kind:"camcsv", meta:{shift, floor}});
-    if(camXlsx && !camCsv) rnPlanRows.push({unit, src:camXlsx.rel, file:null, dst:"(open the xlsx in Excel and Save As → CSV, re-run)", kind:"todo"});
+    if(labelCsv) rnPlanRows.push({unit, src:labelCsv.rel, file:labelCsv.file, dst:`csv_floorplan_property_variation/csv_floorplan_${nf}_${floor}.csv`, kind:"fpcsv", meta:{shift, dropLayer, floor, strict}});
+    if(camCsv) rnPlanRows.push({unit, src:camCsv.rel, file:camCsv.file, dst:`csv_camera_property_variation/csv_camera_${nf}.csv`, kind:"camcsv", meta:{shift, floor, strict}});
+    if(camXlsx && !camCsv) rnPlanRows.push({unit, src:camXlsx.rel, file:camXlsx.file, dst:`csv_camera_property_variation/csv_camera_${nf}.csv`, kind:"camxlsx", meta:{shift, floor, strict}});
   }
   // unmapped UI
   const um = document.getElementById("rnUnmapped");
@@ -1158,9 +1384,64 @@ document.getElementById("rnBuild").onclick = () => {
   document.getElementById("rnExecNote").textContent = window.showDirectoryPicker ? "Copies stream directly disk-to-disk; a 30 GB set runs at drive speed. Originals are never touched." : "Direct copy needs Chrome or Edge — use the script downloads instead.";
   if(!window.showDirectoryPicker) document.getElementById("rnExec").disabled = true;
 };
+/* ---- minimal in-browser XLSX reader (zip + sheet1.xml) — converts Max camera exports without Excel ---- */
+async function xlsxRows(file){
+  const buf = new Uint8Array(await file.arrayBuffer());
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let e = buf.length - 22;
+  while(e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if(e < 0) throw new Error("not an xlsx (zip signature missing)");
+  const cnt = dv.getUint16(e + 10, true), cdOff = dv.getUint32(e + 16, true);
+  const entries = {};
+  let p = cdOff;
+  for(let i = 0; i < cnt; i++){
+    if(dv.getUint32(p, true) !== 0x02014b50) break;
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+    const nlen = dv.getUint16(p + 28, true), elen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    const lho = dv.getUint32(p + 42, true);
+    entries[new TextDecoder().decode(buf.subarray(p + 46, p + 46 + nlen))] = {method, csize, lho};
+    p += 46 + nlen + elen + clen;
+  }
+  async function read(name){
+    const en = entries[name]; if(!en) return null;
+    const nl = dv.getUint16(en.lho + 26, true), el = dv.getUint16(en.lho + 28, true);
+    const data = buf.subarray(en.lho + 30 + nl + el, en.lho + 30 + nl + el + en.csize);
+    if(en.method === 0) return new TextDecoder().decode(data);
+    return await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();
+  }
+  const shared = [];
+  const ss = await read("xl/sharedStrings.xml");
+  if(ss) for(const m of ss.matchAll(/<si[\s>][\s\S]*?<\/si>/g))
+    shared.push([...m[0].matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g)].map(x => x[1]).join(""));
+  const sheetName = entries["xl/worksheets/sheet1.xml"] ? "xl/worksheets/sheet1.xml"
+    : Object.keys(entries).filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort()[0];
+  const xml = sheetName && await read(sheetName);
+  if(!xml) throw new Error("no worksheet found in xlsx");
+  const unesc = s => s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,"&");
+  const rows = [];
+  for(const rm of xml.matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)){
+    const cells = [];
+    for(const cm of rm[1].matchAll(/<c\s([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)){
+      const attrs = cm[1], body = cm[2] || "";
+      const ref = /r="([A-Z]+)\d+"/.exec(attrs);
+      let col = cells.length;
+      if(ref){ col = 0; for(const ch of ref[1]) col = col * 26 + (ch.charCodeAt(0) - 64); col--; }
+      const t = (/t="([^"]+)"/.exec(attrs) || [])[1];
+      let val = "";
+      if(t === "inlineStr") val = [...body.matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g)].map(x => x[1]).join("");
+      else { const v = (/<v[^>]*>([\s\S]*?)<\/v>/.exec(body) || [])[1] || "";
+             val = t === "s" ? (shared[+v] ?? "") : v; }
+      cells[col] = unesc(val).trim();
+    }
+    if(cells.some(c => c)) rows.push([...cells].map(c => c ?? ""));
+  }
+  return rows;
+}
+let rnDropped = [];   // strict-master: rows removed from CSVs on the last run
 async function rnTransform(row){
-  const text = await row.file.text();
-  const rows = text.split(/\r?\n/).filter(r=>r.trim());
+  const rows = row.kind === "camxlsx"
+    ? (await xlsxRows(row.file)).map(r => r.join(","))
+    : (await row.file.text()).split(/\r?\n/).filter(r => r.trim());
   const out = [];
   if(row.kind === "fpcsv"){
     for(let i=0;i<rows.length;i++){
@@ -1168,22 +1449,33 @@ async function rnTransform(row){
       if(i===0 && /layer|center|name/i.test(rows[i])) continue;
       if(c.length < 3) continue;
       let nm = c[0].trim();
-      if(/^layer\s/i.test(nm)){ if(row.meta.dropLayer) continue; }
-      else { const [room] = rnParse(nm); nm = row.meta.shift(room || nm.replace(/\s+/g,"")); }
+      if(/^layer\s/i.test(nm)){
+        if(row.meta.dropLayer || row.meta.strict){ if(row.meta.strict) rnDropped.push(`${row.dst}: "${nm}" (PSD junk)`); continue; }
+      }
+      else {
+        const [room] = rnParse(nm); nm = row.meta.shift(room || nm.replace(/\s+/g,""));
+        if(row.meta.strict && !knownRoom(nm)){ rnDropped.push(`${row.dst}: "${nm}" (not in master dictionary)`); continue; }
+      }
       out.push([nm, c[1].trim(), c[2].trim()].join(","));
     }
   } else {
+    /* camera rows: RENAME-ONLY — the name column is normalized to floor_RoomName_n via the
+       dictionary; every numeric value passes through verbatim (no unit scaling, no recompute). */
     for(let i=0;i<rows.length;i++){
       const c = rows[i].split(",");
       if(i===0 && /name|location|rot/i.test(rows[i])) continue;
-      if(c.length < 7) continue;
-      const [room, idx, miss] = rnParse(c[0].trim().replace(/\.[^.]*$/,""));
-      if(!room) continue;
-      const R = row.meta.shift(room);
-      const x=+c[1]*100, y=+c[2]*100, z=+c[3]*100, hdg=+c[6];
-      const dx=-Math.cos(hdg*Math.PI/180), dy=Math.sin(hdg*Math.PI/180);
-      const f3=v=>(+v.toFixed(3)).toString();
-      out.push(`${row.meta.floor}_${R}_${idx},${f3(x)},${f3(y)},${f3(z)},0,${f3(hdg)},0,${f3(dx)},${f3(dy)},0`);
+      if(c.length < 2) continue;
+      const nums = c.slice(1).map(v => String(v).trim());
+      const raw = c[0].trim().replace(/\.[^.]*$/,"");
+      const dep = /^(\d+)_(.+)_(\d+)$/.exec(raw);                 // already floor_Room_n?
+      const flr = dep ? dep[1] : row.meta.floor;
+      const [room, idx, miss] = rnParse(dep ? dep[2] + "_" + dep[3] : raw);
+      const R = room ? row.meta.shift(room) : null;
+      if(!R || !knownRoom(R)){
+        if(row.meta.strict){ rnDropped.push(`${row.dst}: "${raw}" (${R ? "not in master dictionary" : "unmappable camera name"})`); continue; }
+        out.push([raw.replace(/\s+/g,""), ...nums].join(",")); continue;
+      }
+      out.push([`${flr}_${R}_${idx}`, ...nums].join(","));
     }
   }
   return out.join("\n") + "\n";
@@ -1199,6 +1491,7 @@ document.getElementById("rnExec").onclick = async () => {
     return dirCache[path] = d;
   }
   let done = 0, fail = 0;
+  rnDropped = [];
   for(const row of rnPlanRows){
     if(row.kind === "todo" || row.dup) continue;
     try {
@@ -1206,23 +1499,27 @@ document.getElementById("rnExec").onclick = async () => {
       const d = await ensureDir(segs.slice(0,-1).join("/"));
       const fh = await d.getFileHandle(segs[segs.length-1], {create:true});
       const w = await fh.createWritable();
-      if(row.kind === "fpcsv" || row.kind === "camcsv") await w.write(await rnTransform(row));
+      const conv = row.kind === "fpcsv" || row.kind === "camcsv" || row.kind === "camxlsx";
+      if(conv) await w.write(await rnTransform(row));
       else await row.file.stream().pipeTo(w).catch(async e => { await w.close().catch(()=>{}); throw e; });
-      if(row.kind === "fpcsv" || row.kind === "camcsv") await w.close();
+      if(conv) await w.close();
       done++;
     } catch(e){ fail++; }
     if((done+fail) % 10 === 0 || done+fail === rnPlanRows.length) prog.textContent = `Copying… ${done} done, ${fail} failed of ${rnPlanRows.length}`;
   }
-  prog.innerHTML = `<span class="pill ${fail?"err":"ok"}">${fail?"finished with failures":"complete"}</span> ${done} copied, ${fail} failed. Now run the Validator (tab 04) on the destination.`;
+  prog.innerHTML = `<span class="pill ${fail?"err":"ok"}">${fail?"finished with failures":"complete"}</span> ${done} copied, ${fail} failed. Now run the Validator (tab 04) on the destination.` +
+    (rnDropped.length ? `<br><span class="small" style="color:#B8860B">✂ strict master dictionary removed <b>${rnDropped.length}</b> CSV row(s):</span><br><span class="small">` +
+      rnDropped.slice(0, 20).map(esc).join("<br>") + (rnDropped.length > 20 ? `<br>…and ${rnDropped.length - 20} more` : "") +
+      `</span><br><span class="small">Removed rows are listed only — source files are untouched; only the deployment copies are cleaned.</span>` : "");
 };
 function rnDl(name, text){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text])); a.download=name; a.click(); }
 document.getElementById("rnCsv").onclick = () => rnDl("rename_map.csv", "unit,source,destination,kind\n" +
   rnPlanRows.map(r=>[r.unit,r.src,r.dst,r.kind].map(v=>`"${(v||"").replace(/"/g,'""')}"`).join(",")).join("\n"));
 document.getElementById("rnSh").onclick = () => rnDl("rename_deploy.command", "#!/bin/bash\n# Run from the folder that CONTAINS \"" + rnRoot + "\"\ncd \"$(dirname \"$0\")\"\nset -e\n" +
-  rnPlanRows.filter(r=>r.kind!=="todo"&&!r.dup&&r.kind!=="fpcsv"&&r.kind!=="camcsv").map(r=>`mkdir -p "DEPLOYMENT/${r.dst.split("/").slice(0,-1).join("/")}"\ncp "${r.src}" "DEPLOYMENT/${r.dst}"`).join("\n") +
-  "\necho done\n# NOTE: CSV conversions are not included in the script - use the in-browser copy for those.\n");
+  rnPlanRows.filter(r=>r.kind!=="todo"&&!r.dup&&r.kind!=="fpcsv"&&r.kind!=="camcsv"&&r.kind!=="camxlsx").map(r=>`mkdir -p "DEPLOYMENT/${r.dst.split("/").slice(0,-1).join("/")}"\ncp "${r.src}" "DEPLOYMENT/${r.dst}"`).join("\n") +
+  "\necho done\n# NOTE: CSV/XLSX conversions are not included in the script - use the in-browser copy for those.\n");
 document.getElementById("rnBat").onclick = () => rnDl("rename_deploy.bat", "@echo off\r\nrem Run from the folder that CONTAINS " + rnRoot + "\r\n" +
-  rnPlanRows.filter(r=>r.kind!=="todo"&&!r.dup&&r.kind!=="fpcsv"&&r.kind!=="camcsv").map(r=>{const d=("DEPLOYMENT/"+r.dst).replace(/\//g,"\\"); const dd=d.split("\\").slice(0,-1).join("\\"); return `if not exist "${dd}" mkdir "${dd}"\r\ncopy /y "${r.src.replace(/\//g,"\\")}" "${d}"`;}).join("\r\n") + "\r\npause\r\n");
+  rnPlanRows.filter(r=>r.kind!=="todo"&&!r.dup&&r.kind!=="fpcsv"&&r.kind!=="camcsv"&&r.kind!=="camxlsx").map(r=>{const d=("DEPLOYMENT/"+r.dst).replace(/\//g,"\\"); const dd=d.split("\\").slice(0,-1).join("\\"); return `if not exist "${dd}" mkdir "${dd}"\r\ncopy /y "${r.src.replace(/\//g,"\\")}" "${d}"`;}).join("\r\n") + "\r\npause\r\n");
 
 
 /* ================= Unit-type combination builder ================= */
@@ -1441,6 +1738,978 @@ document.getElementById("fcDownload").onclick = () => {
   a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
   a.download = `csv_floorplan_${v}_${floor}.csv`; a.click();
 };
+
+/* ================= Workflow sub-tabs ================= */
+document.querySelectorAll("#wtSub button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#wtSub button").forEach(x => x.classList.remove("active"));
+  document.querySelectorAll(".wtsub").forEach(x => x.classList.remove("active"));
+  b.classList.add("active"); document.getElementById("wt-" + b.dataset.wt).classList.add("active");
+});
+
+/* ================= SVG mask checker ================= */
+let svImgReady = false, svSvgText = null, svZoom = 1;
+const svCheck = (sev, msg) => `<p class="small" style="margin:4px 0"><span class="pill ${sev}">${sev==="ok"?"pass":sev==="warn"?"warning":"error"}</span> ${msg}</p>`;
+function svFitWidth(){ return Math.max(100, document.getElementById("svView").clientWidth - 2); }
+function svApplyZoom(z){
+  svZoom = Math.min(6, Math.max(0.2, z));
+  const img = document.getElementById("svImg");
+  img.style.width = (svFitWidth() * svZoom) + "px";
+  document.getElementById("svZoomPct").textContent = Math.round(svZoom*100) + "%";
+}
+document.getElementById("svZoomIn").onclick  = () => svApplyZoom(svZoom * 1.4);
+document.getElementById("svZoomOut").onclick = () => svApplyZoom(svZoom / 1.4);
+document.getElementById("svZoomFit").onclick = () => svApplyZoom(1);
+document.getElementById("svOpacity").oninput = () => {
+  document.getElementById("svOverlay").style.opacity = document.getElementById("svOpacity").value / 100;
+};
+document.getElementById("svImgIn").onchange = e => {
+  const f = e.target.files[0]; if(!f) return;
+  document.getElementById("svStudio").classList.add("on");   // show BEFORE measuring
+  const img = document.getElementById("svImg");
+  img.onload = () => { svImgReady = true; requestAnimationFrame(() => { svApplyZoom(1); svRun(); }); };
+  img.src = URL.createObjectURL(f);
+};
+let svSvgName = "mask.svg";
+document.getElementById("svSvgIn").onchange = async e => {
+  const f = e.target.files[0]; if(!f) return;
+  document.getElementById("svStudio").classList.add("on");
+  svSvgName = f.name; svOffsets = {}; svSel = null;
+  svSvgText = await f.text(); requestAnimationFrame(svRun);
+};
+function svRun(){
+  if(!svImgReady || !svSvgText) return;
+  const studio = document.getElementById("svStudio"); studio.classList.add("on");
+  const overlay = document.getElementById("svOverlay"), img = document.getElementById("svImg");
+  const checks = [];
+  let doc;
+  try { doc = new DOMParser().parseFromString(svSvgText, "image/svg+xml"); } catch(e){ doc = null; }
+  const svg = doc && doc.querySelector("svg");
+  if(!svg || doc.querySelector("parsererror")){
+    document.getElementById("svChecks").innerHTML = svCheck("err", "File is not a valid SVG.");
+    overlay.innerHTML = ""; return;
+  }
+  // dimensions
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  let vw, vh, dimSrc;
+  const vb = (svg.getAttribute("viewBox") || "").trim().split(/[\s,]+/).map(Number);
+  if(vb.length === 4 && vb[2] > 0){ vw = vb[2]; vh = vb[3]; dimSrc = "viewBox"; }
+  else { vw = parseFloat(svg.getAttribute("width")); vh = parseFloat(svg.getAttribute("height")); dimSrc = "width/height attributes"; }
+  if(!vw || !vh){
+    checks.push(svCheck("warn", "SVG has no viewBox or width/height — cannot verify resolution. Ask for a re-export with a viewBox."));
+    svg.setAttribute("viewBox", `0 0 ${iw} ${ih}`);
+  } else {
+    checks.push(svCheck("ok", `Image ${iw} × ${ih} px · SVG canvas ${vw} × ${vh} (${dimSrc}).`).replace('class="pill ok">pass', 'class="pill info">info'));
+    if(vw === iw && vh === ih) checks.push(svCheck("ok", "Resolutions match exactly."));
+    else if(Math.abs(vw/vh - iw/ih) < 0.001) checks.push(svCheck("warn", `Resolutions differ (SVG ${vw}×${vh} vs image ${iw}×${ih}) but the aspect ratio matches — the overlay below is scaled to fit. Confirm the platform accepts scaled masks, or re-export at ${iw}×${ih}.`));
+    else checks.push(svCheck("err", `Resolution AND aspect ratio mismatch: SVG ${vw}×${vh} vs image ${iw}×${ih}. Masks WILL be misaligned — re-export the SVG at the image resolution.`));
+    if(!svg.getAttribute("viewBox")) svg.setAttribute("viewBox", `0 0 ${vw} ${vh}`);
+  }
+  // paths + ids
+  const paths = [...svg.querySelectorAll("path, polygon, rect, circle, ellipse")];
+  const withId = paths.filter(p => p.id), noId = paths.length - withId.length;
+  const ids = withId.map(p => p.id);
+  const dupes = ids.filter((id,i) => ids.indexOf(id) !== i);
+  if(!paths.length) checks.push(svCheck("err", "SVG contains no shape elements."));
+  if(noId) checks.push(svCheck("err", `${noId} shape(s) have no id — they cannot be clicked in the app.`));
+  if(dupes.length) checks.push(svCheck("err", "Duplicate ids: " + [...new Set(dupes)].join(", ")));
+  const idOk = id => new RegExp(`^${UC}$`).test(id) || /^\d{1,2}$/.test(id) || /^[a-z][a-z0-9-]*$/.test(id);
+  const badIds = ids.filter(id => !idOk(id));
+  if(withId.length && !dupes.length && !badIds.length) checks.push(svCheck("ok", `${withId.length} path(s), all with pattern-valid ids.`));
+  if(badIds.length) checks.push(svCheck("warn", `${badIds.length} id(s) don't look like a unit code (b1-06-09), floor number or slug: ` + badIds.slice(0,6).join(", ") + (badIds.length>6?"…":"")));
+  document.getElementById("svChecks").innerHTML = checks.join("");
+  // render overlay
+  svg.setAttribute("width", "100%"); svg.setAttribute("height", "100%");
+  svg.setAttribute("preserveAspectRatio", "none");
+  const st = doc.createElementNS("http://www.w3.org/2000/svg", "style");
+  st.textContent = "path,polygon,rect,circle,ellipse{fill:#0D54FE;fill-opacity:.45;stroke:#0A2540;stroke-width:2;vector-effect:non-scaling-stroke}";
+  svg.insertBefore(st, svg.firstChild);
+  overlay.innerHTML = ""; overlay.appendChild(svg);
+  overlay.style.opacity = document.getElementById("svOpacity").value / 100;
+  // id list with hover highlight
+  document.getElementById("svIdCount").textContent = `(${withId.length})`;
+  document.getElementById("svIds").innerHTML = withId.map(p =>
+    `<div class="svid ${idOk(p.id) ? "" : "bad"}" data-id="${p.id}"><span>${p.id}</span><span class="small">${p.tagName}</span></div>`).join("")
+    || '<p class="small">No ids found.</p>';
+  document.querySelectorAll(".svid").forEach(el => {
+    el.onmouseenter = () => { const t = svg.getElementById(el.dataset.id); if(t){ t.style.fill = "#FFC857"; t.style.fillOpacity = ".85"; } };
+    el.onmouseleave = () => { const t = svg.getElementById(el.dataset.id); if(t && el.dataset.id !== svSel){ t.style.fill = ""; t.style.fillOpacity = ""; } };
+    el.onclick = () => svSelect(el.dataset.id);
+  });
+  svLiveSvg = svg; svViewW = vw || iw; 
+  for(const id of Object.keys(svOffsets)) svApplyOffset(id);   // re-apply after rebuild
+  svBindEdit();
+  svApplyZoom(svZoom);
+}
+
+/* ---- SVG edit engine ---- */
+let svOffsets = {}, svSel = null, svLiveSvg = null, svViewW = 4096, svDrag = null;
+function svSelect(id){
+  svSel = id;
+  document.querySelectorAll(".svid").forEach(x => x.classList.toggle("sel", x.dataset.id === id));
+  document.getElementById("svSelId").textContent = id;
+  const o = svOffsets[id] || {dx:0, dy:0};
+  document.getElementById("svDx").value = o.dx; document.getElementById("svDy").value = o.dy;
+}
+function svApplyOffset(id){
+  if(!svLiveSvg) return;
+  const t = svLiveSvg.getElementById(id); if(!t) return;
+  if(t.dataset.orig === undefined) t.dataset.orig = t.getAttribute("transform") || "";
+  const o = svOffsets[id] || {dx:0, dy:0};
+  const tr = (o.dx || o.dy) ? `translate(${o.dx} ${o.dy})` + (t.dataset.orig ? " " + t.dataset.orig : "") : t.dataset.orig;
+  if(tr) t.setAttribute("transform", tr); else t.removeAttribute("transform");
+  document.querySelectorAll(".svid").forEach(x => { if(x.dataset.id === id) x.classList.toggle("moved", !!(o.dx || o.dy)); });
+}
+function svNudge(ddx, ddy){
+  if(!svSel) return;
+  const o = svOffsets[svSel] ??= {dx:0, dy:0};
+  o.dx += ddx; o.dy += ddy;
+  document.getElementById("svDx").value = o.dx; document.getElementById("svDy").value = o.dy;
+  svApplyOffset(svSel);
+}
+function svBindEdit(){
+  const on = document.getElementById("svEdit").checked;
+  if(!svLiveSvg) return;
+  svLiveSvg.querySelectorAll("path,polygon,rect,circle,ellipse").forEach(p => {
+    p.style.pointerEvents = on ? "visiblePainted" : "none";
+    p.style.cursor = on ? "move" : "";
+    p.onmousedown = on ? (ev => {
+      ev.preventDefault();
+      if(p.id) svSelect(p.id);
+      const scale = svViewW / document.getElementById("svImg").getBoundingClientRect().width;
+      svDrag = { id: p.id, x: ev.clientX, y: ev.clientY, scale,
+                 o: {...(svOffsets[p.id] || {dx:0, dy:0})} };
+    }) : null;
+  });
+  document.getElementById("svOverlay").style.pointerEvents = on ? "auto" : "none";
+}
+document.addEventListener("mousemove", ev => {
+  if(!svDrag || !svDrag.id) return;
+  const o = svOffsets[svDrag.id] ??= {dx:0, dy:0};
+  o.dx = Math.round(svDrag.o.dx + (ev.clientX - svDrag.x) * svDrag.scale);
+  o.dy = Math.round(svDrag.o.dy + (ev.clientY - svDrag.y) * svDrag.scale);
+  if(svDrag.id === svSel){ document.getElementById("svDx").value = o.dx; document.getElementById("svDy").value = o.dy; }
+  svApplyOffset(svDrag.id);
+});
+document.addEventListener("mouseup", () => svDrag = null);
+document.addEventListener("keydown", ev => {
+  if(!svSel || !document.getElementById("svEdit").checked) return;
+  if(!document.getElementById("wt-svg").classList.contains("active")) return;
+  if(["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName)) return;
+  const s = +document.getElementById("svStep").value;
+  const map = {ArrowLeft:[-s,0], ArrowRight:[s,0], ArrowUp:[0,-s], ArrowDown:[0,s]};
+  if(map[ev.key]){ ev.preventDefault(); svNudge(...map[ev.key]); }
+});
+document.getElementById("svEdit").onchange = () => {
+  document.getElementById("svEditPanel").style.display = document.getElementById("svEdit").checked ? "block" : "none";
+  svBindEdit();
+};
+const svStepV = () => +document.getElementById("svStep").value;
+document.getElementById("svL").onclick = () => svNudge(-svStepV(), 0);
+document.getElementById("svR").onclick = () => svNudge(svStepV(), 0);
+document.getElementById("svU").onclick = () => svNudge(0, -svStepV());
+document.getElementById("svD").onclick = () => svNudge(0, svStepV());
+document.getElementById("svReset").onclick = () => { if(svSel){ svOffsets[svSel] = {dx:0, dy:0}; svApplyOffset(svSel); svSelect(svSel); } };
+["svDx","svDy"].forEach(id => document.getElementById(id).oninput = () => {
+  if(!svSel) return;
+  const o = svOffsets[svSel] ??= {dx:0, dy:0};
+  o.dx = +document.getElementById("svDx").value || 0;
+  o.dy = +document.getElementById("svDy").value || 0;
+  svApplyOffset(svSel);
+});
+document.getElementById("svDownload").onclick = () => {
+  if(!svSvgText) return;
+  const doc = new DOMParser().parseFromString(svSvgText, "image/svg+xml");
+  let changed = 0;
+  for(const [id, o] of Object.entries(svOffsets)){
+    if(!o.dx && !o.dy) continue;
+    const el = doc.getElementById(id); if(!el) continue;
+    const orig = el.getAttribute("transform");
+    el.setAttribute("transform", `translate(${o.dx} ${o.dy})` + (orig ? " " + orig : ""));
+    changed++;
+  }
+  const out = new XMLSerializer().serializeToString(doc);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([out], {type:"image/svg+xml"}));
+  a.download = svSvgName; a.click();
+  document.getElementById("svSelId").textContent = (svSel || "—") + ` · downloaded (${changed} path(s) adjusted)`;
+};
+
+/* ================= Content updater ================= */
+function upConvertCsv(text, kind){
+  const rows = text.split(/\r?\n/).filter(r => r.trim());
+  const out = [];
+  for(let i = 0; i < rows.length; i++){
+    const c = rows[i].split(",");
+    if(i === 0 && /layer|center|name|location/i.test(rows[i])) continue;
+    if(kind === "fpcsv"){
+      if(c.length < 3) continue;
+      let nm = c[0].trim();
+      if(/^layer\s/i.test(nm)) continue;
+      const pr = rnParse(nm);
+      out.push([(pr && pr[0]) ? pr[0] + (pr[1] > 1 ? pr[1] : "") : nm.replace(/\s+/g,""), c[1].trim(), c[2].trim()].join(","));
+    } else {
+      /* camera rows: RENAME-ONLY — name normalized, numeric values verbatim */
+      if(c.length < 2) continue;
+      const raw = c[0].trim().replace(/\.[^.]*$/,"");
+      const dep = /^(\d+)_(.+)_(\d+)$/.exec(raw);
+      const pr = rnParse(dep ? dep[2] + "_" + dep[3] : raw);
+      if(!pr || !pr[0]) continue;
+      out.push([`${dep ? dep[1] : 0}_${pr[0]}_${pr[1]}`, ...c.slice(1).map(v => v.trim())].join(","));
+    }
+  }
+  return out.join("\n") + "\n";
+}
+let upDep = [], upNewF = [], upRows = [], upDone = [];
+function upParseAsset(rel){
+  const name = rel.split("/").pop();
+  let m;
+  if(m = RX.img_var.exec(name)) return {kind:"image_360", vcode:m[1], scheme:m[6], floor:m[7], room:m[8], index:+m[9]};
+  if(m = RX.img_unit.exec(name)) return {kind:"image_360_unit", unitcode:m[1], vcode:m[2], scheme:m[7], floor:m[8], room:m[9], index:+m[10]};
+  if(m = RX.cam.exec(name)) return {kind:"csv_camera", vcode:m[1]};
+  if(m = RX.fp.exec(name)) return {kind:"csv_floorplan", vcode:m[1], floor:m[6]};
+  if(m = RX.glb.exec(name)) return {kind:"collision_model", vcode:m[1], floor:m[6]};
+  if(m = RX.bpf.exec(name)) return {kind:"floorplan_backplate", vcode:m[1], scheme:m[6], floor:m[7]};
+  return {kind:"other"};
+}
+document.getElementById("upDep").onchange = e => {
+  upDep = [...e.target.files].map(f => ({rel:(f.webkitRelativePath||f.name).replace(/\\/g,"/").split("/").slice(1).join("/"), size:f.size}))
+    .filter(f => f.rel && !/(^|\/)(\.|~\$)/.test(f.rel));
+  const vcodes = [...new Set(upDep.map(f => { const m = new RegExp(VC).exec(f.rel.split("/").pop()); return m ? m[0] : null; }).filter(Boolean))].sort();
+  document.getElementById("upVcode").innerHTML = vcodes.map(v => `<option>${v}</option>`).join("");
+  document.getElementById("upDepMsg").textContent = `${upDep.length} deployment files indexed · ${vcodes.length} variation codes found.`;
+  if(upNewF.length) upMatch();
+};
+document.getElementById("upNew").onchange = e => {
+  upNewF = [...e.target.files].filter(f => !/^(\.|~\$)/.test(f.name) && !/^(thumbs\.db|desktop\.ini)$/i.test(f.name));
+  if(upDep.length) upMatch();
+};
+document.getElementById("upRematch").onclick = () => upMatch();
+function upMatch(){
+  const byName = {}; upDep.forEach(f => (byName[f.rel.split("/").pop()] ??= []).push(f));
+  const vc = document.getElementById("upVcode").value, scheme = document.getElementById("upScheme").value.trim() || "s1";
+  upRows = upNewF.map(f => {
+    const row = {file:f, src:f.name, status:"unmatched", target:null, note:""};
+    if(byName[f.name]){
+      const t = byName[f.name][0];
+      row.target = t.rel;
+      row.status = "replace";
+      row.note = t.size === 0 || t.size < 400*1024 && /\.jpe?g$/i.test(f.name) ? "replaces placeholder" :
+                 t.size < 60*1024 ? "replaces placeholder" : "⚠ target is " + (t.size/1048576).toFixed(1) + " MB — may be REAL content, will overwrite";
+      if(byName[f.name].length > 1) row.note += " · name exists in " + byName[f.name].length + " places, using first";
+    } else if(vc){
+      const nof = stripF(vc), floor = document.getElementById("upFloor").value.trim() || "0";
+      const base = f.name.replace(/\.[^.]+$/,""), ext = (f.name.split(".").pop() || "").toLowerCase();
+      const setT = (cand, note, kind) => {
+        row.target = cand; row.kind = kind || "copy";
+        row.status = upDep.some(d => d.rel === cand) ? "replace" : "new";
+        row.note = note + (row.status === "new" ? " — no placeholder, will be ADDED" : "");
+      };
+      if(/jpe?g|webp/.test(ext)){
+        const pr = (typeof rnParse === "function") ? rnParse(base) : null;
+        if(pr && pr[0]) setT(`image_360_property_variation/${vc}/image_360_${vc}_${scheme}_0_${pr[0]}_${pr[1]}.jpg`, "matched via room dictionary");
+        else setT(`backplate_image_floorplan_property_variation/backplate_image_floorplan_${nof}_${scheme}_${floor}.${ext==="webp"?"webp":"jpg"}`, "no room in name — treated as the unit floorplan backplate");
+      } else if(ext === "csv"){
+        if(/camera/i.test(f.name)) setT(`csv_camera_property_variation/csv_camera_${nof}.csv`, "camera CSV — names normalized via dictionary on copy; numeric values untouched", "camcsv");
+        else setT(`csv_floorplan_property_variation/csv_floorplan_${nof}_${floor}.csv`, "label CSV — reformatted on copy (dictionary names, header + PSD Layer rows dropped)", "fpcsv");
+      } else if(ext === "glb"){
+        setT(`model_360-collision_property_variation/model_360-collision_${nof}_${floor}.glb`, "collision model (no-f code)");
+      } else if(ext === "xlsx"){
+        setT(`csv_camera_property_variation/csv_camera_${nof}.csv`, "Max camera xlsx — parsed in-browser, written as csv_camera on copy; names normalized, numeric values untouched", "camxlsx");
+      } else row.note = "no matching name in deployment";
+    } else row.note = "no matching name in deployment";
+    return row;
+  });
+  const c = s => upRows.filter(r => r.status === s).length;
+  document.getElementById("upStats").textContent = `${upRows.length} files: ${c("replace")} replace · ${c("new")} new · ${c("unmatched")} unmatched. Unmatched files are skipped.`;
+  document.getElementById("upTable").innerHTML = `<table><tr><th>New file</th><th>→ Target</th><th>Status</th><th>Note</th></tr>` +
+    upRows.map(r => `<tr${r.status==="unmatched" ? ' style="background:#FDE7E5"' : ''}><td><code>${esc(r.src)}</code></td><td><code>${esc(r.target||"—")}</code></td><td><span class="pill ${r.status==="replace"?"ok":r.status==="new"?"info":"err"}">${r.status}</span></td><td class="small">${esc(r.note)}</td></tr>`).join("") + "</table>";
+  document.getElementById("upMatchCard").style.display = "block";
+  document.getElementById("upSqlCard").style.display = "block";
+}
+document.getElementById("upExec").onclick = async () => {
+  const rows = upRows.filter(r => r.target && r.status !== "unmatched");
+  if(!rows.length) return;
+  let dir; try { dir = await window.showDirectoryPicker({mode:"readwrite"}); } catch(e){ return; }
+  const msg = document.getElementById("upExecMsg");
+  const dirCache = {};
+  async function ensureDir(path){
+    if(dirCache[path] !== undefined) return dirCache[path];
+    let d = dir;
+    for(const seg of path.split("/")) if(seg) d = await d.getDirectoryHandle(seg, {create:true});
+    return dirCache[path] = d;
+  }
+  let ok = 0, fail = 0;
+  for(const r of rows){
+    try {
+      const segs = r.target.split("/");
+      const d = await ensureDir(segs.slice(0,-1).join("/"));
+      const fh = await d.getFileHandle(segs[segs.length-1], {create:true});
+      const w = await fh.createWritable();
+      let bytes = r.file.size;
+      if(r.kind === "fpcsv" || r.kind === "camcsv" || r.kind === "camxlsx"){
+        const raw = r.kind === "camxlsx" ? (await xlsxRows(r.file)).map(x => x.join(",")).join("\n") : await r.file.text();
+        const text = upConvertCsv(raw, r.kind === "camxlsx" ? "camcsv" : r.kind);
+        await w.write(text); await w.close(); bytes = text.length;
+      } else {
+        await r.file.stream().pipeTo(w);
+      }
+      upDone.push({date:new Date().toISOString(), src:r.src, path:r.target, action:r.status === "new" ? "added" : "replaced", size:bytes, ...upParseAsset(r.target)});
+      ok++;
+    } catch(e){ fail++; }
+    msg.textContent = `Copying… ${ok} done, ${fail} failed of ${rows.length}`;
+  }
+  msg.innerHTML = `<span class="pill ${fail?"err":"ok"}">${fail?"finished with failures":"complete"}</span> ${ok} file(s) written. Now download the change log + SQL, then re-run the Validator (tab 05).`;
+};
+document.getElementById("upLog").onclick = () => {
+  if(!upDone.length) { document.getElementById("upExecMsg").textContent = "Run the copy first — the log records executed changes only."; return; }
+  const csv = "date,action,source_file,deployment_path,kind,vcode,unitcode,room,index,scheme,floor,size_bytes\n" +
+    upDone.map(x => [x.date,x.action,x.src,x.path,x.kind,x.vcode||"",x.unitcode||"",x.room||"",x.index??"",x.scheme||"",x.floor??"",x.size].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download = "content_update_log.csv"; a.click();
+};
+document.getElementById("upSql").onclick = () => {
+  if(!upDone.length) { document.getElementById("upExecMsg").textContent = "Run the copy first — SQL is generated from executed changes only."; return; }
+  const tpl = document.getElementById("upSqlTpl").value;
+  const sql = "-- PropVR content update · " + new Date().toISOString() + " · " + upDone.length + " change(s)\n" +
+              "BEGIN;\n\n" +
+    upDone.map(x => tpl
+      .replace(/\{\{path\}\}/g, x.path).replace(/\{\{filename\}\}/g, x.path.split("/").pop())
+      .replace(/\{\{kind\}\}/g, x.kind).replace(/\{\{vcode\}\}/g, x.vcode || "")
+      .replace(/\{\{vcode_nof\}\}/g, x.vcode ? stripF(x.vcode) : "")
+      .replace(/\{\{unitcode\}\}/g, x.unitcode || "").replace(/\{\{room\}\}/g, x.room || "")
+      .replace(/\{\{index\}\}/g, x.index ?? "NULL").replace(/\{\{scheme\}\}/g, x.scheme || "")
+      .replace(/\{\{floor\}\}/g, x.floor ?? "NULL").replace(/\{\{size_bytes\}\}/g, x.size)
+      .replace(/\{\{action\}\}/g, x.action).replace(/\{\{date\}\}/g, x.date)
+    ).join("\n\n") + "\n\nCOMMIT;\n";
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([sql],{type:"text/plain"}));
+  a.download = "content_update.sql"; a.click();
+};
+
+/* ================= Journey Preview ================= */
+let pvFiles = new Map(), pvStack = [], pvUrl = new Map(), pvGl = null;
+const pvGet = rel => pvFiles.get(rel);
+const pvList = rx => [...pvFiles.keys()].filter(k => rx.test(k));
+const pvFirst = rx => pvList(rx).filter(k => !/_w640/.test(k))[0];
+function pvSrc(rel){ if(!pvUrl.has(rel)) pvUrl.set(rel, URL.createObjectURL(pvFiles.get(rel))); return pvUrl.get(rel); }
+document.getElementById("pvDir").onchange = e => {
+  pvFiles = new Map(); pvUrl.forEach(u => URL.revokeObjectURL(u)); pvUrl = new Map();
+  for(const f of e.target.files){
+    const rel = (f.webkitRelativePath || f.name).replace(/\\/g,"/").split("/").slice(1).join("/");
+    if(rel && !/(^|\/)(\.|~\$)/.test(rel) && !/thumbs\.db$/i.test(rel)) pvFiles.set(rel, f);
+  }
+  const schemes = [...new Set(pvList(/^image_360_property_variation\//).map(k => (/_((?:s)\d+)_\d+_[A-Za-z]/.exec(k)||[])[1]).filter(Boolean))].sort();
+  document.getElementById("pvScheme").innerHTML = (schemes.length ? schemes : ["s1"]).map(s => `<option>${s}</option>`).join("");
+  const inv = [
+    ["Project hero", pvFirst(/^backplate_image_project\/[^/]+\.(webp|jpe?g|png)$/) ? 1 : 0],
+    ["Project SVG masks", pvList(/^backplate_image_project\/svgs\/.*\.svg$/).length],
+    ["Tower backplates", pvList(/^backplate_image_tower\/[^/]+\/[^/]+\.(webp|jpe?g|png)$/).filter(k=>!/_w640/.test(k)).length],
+    ["Floorplates", pvList(/^backplate_image_tower-floorplate\//).filter(k=>/\.(webp|jpe?g|png)$/.test(k)&&!/_w640/.test(k)&&!/svgs\//.test(k)).length],
+    ["Floorplan backplates", pvList(/^backplate_image_floorplan_property_variation\//).filter(k=>!/_w640/.test(k)&&/\.(webp|jpe?g|png)$/.test(k)).length],
+    ["Floorplan CSVs", pvList(/^csv_floorplan_property_variation\/.*\.csv$/).length],
+    ["360 images", pvList(/^image_360_property_(variation|unit)\/.*\.jpe?g$/i).length],
+  ];
+  document.getElementById("pvInventory").innerHTML = "<p class='small'>" + inv.map(([l,n]) => `${n ? "✅" : "⚠️"} ${l}: <b>${n}</b>`).join(" · ") + "</p>";
+  pvStack = [];
+  pvGo({level:"project"});
+};
+/* severity per validator rule — scene dependency lines carry the same error/warning/info levels as tab 02 */
+const PVSEV = {X1:"error",X3:"error",X4:"error",X5:"error",X7:"error",X9:"error",C1:"error",C2:"error",C3:"error",C4:"error",C5:"error",C6:"error",C7:"error",
+               N1:"error",N2:"error",N4:"error",N5:"error",N6:"error",N7:"error",N8:"error",N9:"error",
+               X2:"warning",X6:"warning",X8:"warning",X10:"warning",X12:"warning",N3:"warning",C8:"warning",S5:"warning",Q1:"warning",Q2:"warning",Q3:"warning",Q4:"warning",
+               X11:"info"};
+function pvMiss(items){
+  const el = document.getElementById("pvMissing");
+  document.getElementById("pvMissingList").innerHTML = items.map(i =>
+    '<span class="pill err">error</span> missing asset — expected: <code>' + esc(i) + "</code>").join("<br>");
+  el.style.display = items.length ? "block" : "none";
+}
+function pvIssue(html, fix, code, sev){   // scene dependencies flagged by the validator — one block, with corrective measures
+  const el = document.getElementById("pvMissing"), list = document.getElementById("pvMissingList");
+  const fx = fix || (code && FIXES[code]) || "";
+  const s = sev || (code && PVSEV[code]) || "warning";
+  const cls = s === "error" ? "err" : s === "info" ? "info" : "warn";
+  list.innerHTML += (list.innerHTML ? "<br>" : "") +
+    `<span class="pill ${cls}">${s}</span> ` + (code ? "<code>" + code + "</code> " : "") + html +
+    (fx ? "<br><span style='color:#1a7f37;padding-left:18px'>↳ fix: " + fx + "</span>" : "");
+  el.style.display = "block";
+}
+function pvFlashIssues(){
+  const el = document.getElementById("pvMissing");
+  el.scrollIntoView({behavior:"smooth", block:"nearest"});
+  el.style.transition = "box-shadow .2s"; el.style.boxShadow = "0 0 0 3px var(--err)";
+  setTimeout(() => el.style.boxShadow = "", 900);
+}
+function pvGo(state, push = true){
+  if(push && pvStack.length && JSON.stringify(pvStack[pvStack.length-1]) === JSON.stringify(state)) push = false;
+  if(push) pvStack.push(state);
+  pvRender(state);
+}
+document.getElementById("pvBack").onclick = () => {
+  if(pvStack.length > 1){ pvStack.pop(); pvRender(pvStack[pvStack.length-1]); }
+};
+let pvZoom = 1, pvFitMode = "contain";
+function pvFit(){
+  const v = document.getElementById("pvView"), img = document.getElementById("pvImg");
+  const vw = Math.max(100, v.clientWidth - 2), vh = Math.max(100, v.clientHeight - 2);
+  if(img.naturalWidth && img.naturalHeight){
+    const a = img.naturalWidth / img.naturalHeight;
+    return pvFitMode === "cover" ? Math.max(vw, vh * a) : Math.min(vw, vh * a);  // cover fills the frame (production floorplan framing)
+  }
+  return vw;
+}
+function pvApplyZoom(z){
+  pvZoom = Math.min(6, Math.max(0.2, z));
+  document.getElementById("pvImg").style.width = (pvFit() * pvZoom) + "px";
+  document.getElementById("pvZoomPct").textContent = Math.round(pvZoom * 100) + "%";
+  if(pvFitMode === "cover") requestAnimationFrame(() => {
+    const v = document.getElementById("pvView");
+    v.scrollLeft = (v.scrollWidth - v.clientWidth) / 2;
+    v.scrollTop = (v.scrollHeight - v.clientHeight) / 2;
+  });
+}
+document.getElementById("pvZoomIn").onclick  = () => pvApplyZoom(pvZoom * 1.35);
+document.getElementById("pvZoomOut").onclick = () => pvApplyZoom(pvZoom / 1.35);
+document.getElementById("pvZoomFit").onclick = () => pvApplyZoom(1);
+document.getElementById("pvZoom100").onclick = () => {
+  const img = document.getElementById("pvImg");
+  if(img.naturalWidth) pvApplyZoom(img.naturalWidth / pvFit());
+};
+document.querySelectorAll('.chips[data-group="pvdev"] button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.chips[data-group="pvdev"] button').forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  const v = document.getElementById("pvView");
+  v.classList.remove("dev-tablet","dev-mobile");
+  if(b.dataset.v !== "web") v.classList.add("dev-" + b.dataset.v);
+  requestAnimationFrame(() => { pvApplyZoom(1); if(pvStack.length) pvRender(pvStack[pvStack.length-1]); });
+});
+function pvShowImage(rel){
+  pvFitMode = "contain";
+  document.getElementById("pvPano").style.display = "none";
+  document.getElementById("pvVideo").style.display = "none";
+  document.getElementById("pvHot").style.display = "none"; window.pvOnYaw = null;
+  const img = document.getElementById("pvImg");
+  if(!rel){                                                   // no backplate → clean placeholder, not a broken frame
+    document.getElementById("pvWrap").style.display = "none";
+    document.getElementById("pvEmptyTitle").textContent = "No backplate found for this scene";
+    document.getElementById("pvEmptySub").textContent = "the expected filename is listed in the warnings block below";
+    document.getElementById("pvEmpty").style.display = "flex";
+    img.removeAttribute("src"); return img;
+  }
+  document.getElementById("pvEmpty").style.display = "none";
+  document.getElementById("pvWrap").style.display = "inline-block";
+  img.onload = () => pvApplyZoom(1);
+  img.style.transform = "";
+  img.style.width = "100%";
+  img.src = rel ? pvSrc(rel) : "";
+  return img;
+}
+function pvTowers(){ return [...new Set([...pvList(/^backplate_image_tower(-floorplate)?\/[^/]+\//).map(k => k.split("/")[1]), ...pvList(/^image_360_property_unit\/[^/]+\//).map(k => k.split("/")[1])])]; }
+function pvTowerOf(id){
+  const ts = pvTowers(), low = (id || "").toLowerCase();
+  return ts.find(t => t === low) || ts.find(t => low.endsWith(t) || low.includes(t)) ||
+         (/([bv]\d+)/.exec(low) || [])[1] || ts[0] || null;
+}
+function pvFloorsOf(t){
+  return [...new Set(pvList(new RegExp(`^backplate_image_tower-floorplate/${t}/`)).map(k => (/_(\d+)(_w640)?\.(webp|jpe?g|png)$/.exec(k)||[])[1]).filter(Boolean))];
+}
+function pvSvgOverlay(svgRel, onPick){
+  const ov = document.getElementById("pvOverlay"); ov.innerHTML = "";
+  if(!svgRel) return;
+  pvGet(svgRel).text().then(txt => {
+    const doc = new DOMParser().parseFromString(txt, "image/svg+xml");
+    const svg = doc.querySelector("svg"); if(!svg) return;
+    if(!svg.getAttribute("viewBox")){
+      const w = parseFloat(svg.getAttribute("width")) || 4096, hh = parseFloat(svg.getAttribute("height")) || 4096;
+      svg.setAttribute("viewBox", `0 0 ${w} ${hh}`);
+    }
+    svg.setAttribute("width","100%"); svg.setAttribute("height","100%"); svg.setAttribute("preserveAspectRatio","none");
+    const st = doc.createElementNS("http://www.w3.org/2000/svg","style");
+    st.textContent = "path,polygon,rect{fill:#0D54FE;fill-opacity:0;stroke:transparent;pointer-events:visiblePainted;transition:fill-opacity .15s} path:hover,polygon:hover,rect:hover{fill-opacity:.4}";
+    svg.insertBefore(st, svg.firstChild);
+    ov.appendChild(svg);
+    svg.querySelectorAll("path,polygon,rect").forEach(p => p.onclick = () => p.id && onPick(p.id));
+  });
+}
+function pvBarChips(items){
+  document.getElementById("pvBar").innerHTML = "";
+  const bar = document.getElementById("pvBar");
+  for(const it of items){
+    if(it.text){ const s = document.createElement("span"); s.className = "small"; s.textContent = it.text; bar.appendChild(s); continue; }
+    if(it.select){ const sel = document.createElement("select"); sel.className = "gi";
+      sel.innerHTML = it.select.map(o => `<option${o === it.value ? " selected" : ""}>${o}</option>`).join("");
+      sel.onchange = () => it.onchange(sel.value); bar.appendChild(sel); continue; }
+    const b = document.createElement("button"); b.className = "pvchip" + (it.on ? " on" : "");
+    b.textContent = it.label; b.onclick = it.click; bar.appendChild(b);
+  }
+}
+function pvRender(st){
+  document.getElementById("pvStage").style.display = "block";
+  document.getElementById("pvOverlay").innerHTML = "";
+  document.getElementById("pvEmpty").style.display = "none";
+  const scheme = document.getElementById("pvScheme").value || "s1";
+  const missing = [];
+  const crumb = [];
+  const stTower = pvStack.find(s => s.tower)?.tower, stFloor = pvStack.find(s => s.floor !== undefined)?.floor;
+  if(st.level === "project"){
+    crumb.push("Project");
+    const img = pvFirst(/^backplate_image_project\/[^/]+\.(webp|jpe?g|png)$/);
+    if(img) pvShowImage(img); else { missing.push("backplate_image_project/backplate_image_[project]_[orientation]_[time].webp"); pvShowImage(""); }
+    const svg = pvList(/^backplate_image_project\/svgs\/.*\.svg$/)[0];
+    if(!svg) missing.push("backplate_image_project/svgs/*.svg (path id = tower id)");
+    pvSvgOverlay(svg, id => {
+      const t = pvTowerOf(id);
+      if(!t){ document.getElementById("pvHint").textContent = `Mask id "${id}" resolves to no tower folder — check SVG path ids`; return; }
+      const hasTowerBp = !!pvList(new RegExp(`^backplate_image_tower/${t}/[^/]+\\.(webp|jpe?g|png)$`)).filter(k=>!/_w640/.test(k)).length;
+      if(hasTowerBp) pvGo({level:"tower", tower:t});
+      else { const fl = pvFloorsOf(t);
+        if(fl.length) pvGo({level:"floorplate", tower:t, floor:fl[0], note:"tower backplate missing — skipped to floorplate"});
+        else pvGo({level:"tower", tower:t}); }
+    });
+    const towers = [...new Set(pvList(/^backplate_image_tower(-floorplate)?\/[^/]+\//).map(k => k.split("/")[1]))];
+    pvBarChips([{text:"Click a tower on the hero (SVG mask), or jump:"}, ...towers.map(t => ({label:t, click:() => {
+      const hasTowerBp = !!pvList(new RegExp(`^backplate_image_tower/${t}/[^/]+\\.(webp|jpe?g|png)$`)).filter(k=>!/_w640/.test(k)).length;
+      const fl = pvFloorsOf(t);
+      if(hasTowerBp) pvGo({level:"tower", tower:t});
+      else if(fl.length) pvGo({level:"floorplate", tower:t, floor:fl[0], note:"tower backplate missing — skipped to floorplate"});
+      else pvGo({level:"tower", tower:t});
+    }}))]);
+    document.getElementById("pvHint").textContent = "Scene 1 · project hero + tower masks";
+  }
+  else if(st.level === "tower"){
+    crumb.push("Project", "Tower " + st.tower);
+    const img = pvList(new RegExp(`^backplate_image_tower/${st.tower}/[^/]+\\.(webp|jpe?g|png)$`)).filter(k=>!/_w640/.test(k))[0];
+    if(img) pvShowImage(img); else { missing.push(`backplate_image_tower/${st.tower}/backplate_image_tower_${st.tower}_[orientation]_[time].webp`); pvShowImage(""); }
+    const svg = pvList(new RegExp(`^backplate_image_tower/${st.tower}/svgs/.*\\.svg$`))[0];
+    if(!svg) missing.push(`backplate_image_tower/${st.tower}/svgs/*.svg (path id = floor number)`);
+    pvSvgOverlay(svg, id => pvGo({level:"floorplate", tower:st.tower, floor:id}));
+    const floors = [...new Set(pvList(new RegExp(`^backplate_image_tower-floorplate/${st.tower}/`)).map(k => (/_(\d+)(_w640)?\.(webp|jpe?g|png)$/.exec(k)||[])[1]).filter(Boolean))];
+    pvBarChips([{select: pvTowers(), value: st.tower, onchange: t => { pvStack.pop(); pvGo({level:"tower", tower:t}); }},
+      {text:"Click a floor on the tower, or jump:"}, ...floors.map(f => ({label:"Floor " + f, click:() => pvGo({level:"floorplate", tower:st.tower, floor:f})}))]);
+    document.getElementById("pvHint").textContent = "Scene 2 · tower + floor masks";
+  }
+  else if(st.level === "floorplate"){
+    crumb.push("Project", "Tower " + st.tower, "Floor " + st.floor);
+    const img = pvList(new RegExp(`^backplate_image_tower-floorplate/${st.tower}/.*_${st.floor}\\.(webp|jpe?g|png)$`)).filter(k=>!/_w640/.test(k))[0];
+    if(img) pvShowImage(img); else { missing.push(`backplate_image_tower-floorplate/${st.tower}/backplate_image_tower-floorplate_${st.tower}_${st.floor}.webp`); pvShowImage(""); }
+    const svg = pvList(new RegExp(`^backplate_image_tower-floorplate/${st.tower}/svgs/.*_${st.floor}\\.svg$`))[0]
+             || pvList(new RegExp(`^backplate_image_tower-floorplate/${st.tower}/svgs/.*\\.svg$`))[0];
+    if(!svg) missing.push(`backplate_image_tower-floorplate/${st.tower}/svgs/... (path id = unit code e.g. ${st.tower}-${st.floor}-01)`);
+    pvSvgOverlay(svg, id => pvGo({level:"unit", unit:id, tower:st.tower, floor:st.floor}));
+    pvBarChips([{select: pvTowers(), value: st.tower, onchange: t => { const fl = pvFloorsOf(t); pvStack.pop(); pvGo({level:"floorplate", tower:t, floor: fl[0] || st.floor}); }},
+      {select: pvFloorsOf(st.tower).length ? pvFloorsOf(st.tower) : [st.floor], value: st.floor, onchange: f => { pvStack.pop(); pvGo({level:"floorplate", tower:st.tower, floor:f}); }},
+      {text:"Click a unit (SVG mask), or pick a variation directly:"},
+      ...[...new Set(pvList(/^image_360_property_variation\/[^/]+\//).map(k => k.split("/")[1]))].map(v => ({label:v, click:() => pvGo({level:"floorplan", vcode:v})}))]);
+    if(st.note) pvIssue(st.note);
+    document.getElementById("pvHint").textContent = "Scene 3 · floorplate + unit masks";
+  }
+  else if(st.level === "unit"){
+    // unit-specific 360s?
+    const unitDir = pvList(new RegExp(`^image_360_property_unit/[^/]+/${st.unit}/`));
+    if(unitDir.length){
+      const vc = (new RegExp(VC).exec(unitDir[0].split("/").pop().replace(/^image_360_[^_]+-\d+-\d+_/, "")) || [])[0] || null;
+      pvGo({level:"floorplan", vcode: vc, unit: st.unit}, false); return;
+    }
+    const vcs = [...new Set(pvList(/^image_360_property_variation\/[^/]+\//).map(k => k.split("/")[1]))];
+    if(vcs.length === 1){ pvStack.pop(); pvGo({level:"floorplan", vcode: vcs[0], unit: st.unit}); return; }
+    crumb.push("Unit " + st.unit);
+    pvShowImage(""); document.getElementById("pvOverlay").innerHTML = "";
+    pvBarChips([{text:`Unit ${st.unit}: no per-unit 360 set found — pick the variation this unit maps to (stacking plan):`},
+      ...vcs.map(v => ({label:v, click:() => { pvStack.pop(); pvGo({level:"floorplan", vcode:v, unit:st.unit}); }}))]);
+    document.getElementById("pvHint").textContent = "Scene 4 · unit → variation resolution";
+  }
+  else if(st.level === "floorplan"){
+    const vc = st.vcode, nof = stripF(vc), floor = "0", flip = vc !== stripF(vc);
+    crumb.push(st.unit ? "Unit " + st.unit : "", "Floorplan " + vc);
+    const img = pvList(new RegExp(`^backplate_image_floorplan_property_variation/backplate_image_floorplan_${nof}_${scheme}_${floor}\\.(webp|jpe?g|png)$`))[0];
+    if(img){ const el = pvShowImage(img); pvFitMode = "cover"; if(flip) el.style.transform = "scaleX(-1)";
+      el.addEventListener("load", () => { if(el.naturalWidth !== el.naturalHeight)
+        pvIssue(`backplate is ${el.naturalWidth}×${el.naturalHeight} — spec is 4096×4096; the label grid maps to the 4096 PSD canvas, so labels will misalign on this image (validator Q2/N9)`); }, {once:true}); }
+    else { missing.push(`backplate_image_floorplan_${nof}_${scheme}_${floor}.webp`); pvShowImage(""); }
+    const csvRel = pvList(new RegExp(`^csv_floorplan_property_variation/csv_floorplan_${nof}_${floor}\\.csv$`))[0];
+    const ov = document.getElementById("pvOverlay"); ov.innerHTML = "";
+    const rooms = pvRooms(vc, scheme);
+    if(csvRel){
+      Promise.all([pvGet(csvRel).text(), pvCamAll(vc)]).then(([txt, cams]) => {
+        pvLabelRooms[nof] = new Set(txt.split(/\r?\n/).map(r => r.split(",")[0]?.trim()).filter(Boolean));
+        const camRooms = new Set(Object.keys(cams).map(k => k.slice(0, k.lastIndexOf("_"))));
+        const labelSet = new Set();
+        txt.split(/\r?\n/).filter(r => r.trim()).forEach(r => {
+          const c = r.split(","); if(c.length !== 3 || isNaN(parseFloat(c[1]))) return;
+          const room = c[0].trim();
+          const junk = /^layer\s*\d*$/i.test(room);
+          const dead = !junk && !rooms[room] && !camRooms.has(room);
+          labelSet.add(room);
+          const d = document.createElement("div"); d.className = "pvlabel";
+          const lx = parseFloat(c[1])/4096*100, ly = parseFloat(c[2])/4096*100;
+          d.style.left = (flip ? 100 - lx : lx) + "%"; d.style.top = ly + "%";
+          d.textContent = room;
+          if(junk || dead){ d.style.background = "rgba(178,44,44,.88)"; d.style.borderColor = "#ffb1a8";
+            d.title = junk ? "PSD junk row (C6)" : "dead label — no camera / 360 (X10)"; }
+          d.onclick = () => rooms[room] ? pvGo({level:"pano", vcode:vc, room, n:Math.min(...rooms[room]), unit:st.unit}) : pvFlashIssues();
+          ov.appendChild(d);
+          // per-label scene issues (validator rules, precomputed)
+          if(junk) pvIssue(`label "${esc(room)}" is a PSD junk row — dead label in the app`, "", "C6");
+          else if(room !== c[0]) pvIssue(`label "${esc(c[0])}" has leading/trailing spaces — will not match camera/image names`, "", "C7");
+          else if(dead) pvIssue(`label "${esc(room)}" has no camera and no 360 — dead label on the floorplan`, "", "X10");
+          else if(!rooms[room]) pvIssue(`label "${esc(room)}" has a camera but no 360 image in scheme ${scheme} — black sphere if clicked on the platform`, "", "X4");
+          if(parseFloat(c[1]) < 0 || parseFloat(c[1]) > 4096 || parseFloat(c[2]) < 0 || parseFloat(c[2]) > 4096)
+            pvIssue(`label "${esc(room)}" at (${c[1]}, ${c[2]}) is outside the 4096 grid`, "", "C8");
+        });
+        for(const r of camRooms) if(!labelSet.has(r))
+          pvIssue(`room ${esc(r)} has cameras but no floorplan label — not clickable from the plan`, "", "X11");
+      });
+    } else missing.push(`csv_floorplan_${nof}_${floor}.csv`);
+    const entry = rooms["Foyer"] ? "Foyer" : rooms["Entrance"] ? "Entrance" : Object.keys(rooms)[0];
+    const allVc = [...new Set(pvList(/^image_360_property_variation\/[^/]+\//).map(k => k.split("/")[1]))];
+    pvBarChips([
+      {select: allVc.length ? allVc : [vc], value: vc, onchange: v => { pvStack.pop(); pvGo({level:"floorplan", vcode:v}); }},
+      {label:"⏎ Enter tour" + (entry ? " (" + entry + ")" : ""), on:true, click:() => entry ? pvGo({level:"pano", vcode:vc, room:entry, n:Math.min(...rooms[entry]), unit:st.unit}) : null},
+      {text: entry === "Foyer" || entry === "Entrance" ? "entry = " + entry : "⚠ no Foyer/Entrance — entry falls back to " + (entry || "nothing") + " (validator X12)"}
+    ]);
+    if(!Object.keys(rooms).length) missing.push(`image_360_property_variation/${vc}/image_360_${vc}_${scheme}_${floor}_[Room]_[n].jpg`);
+    document.getElementById("pvHint").textContent = (flip ? "auto-flipped (f code, like the app) · " : "") + "Scene 5 · floorplan fills the frame (production framing) · scroll / − zoom to see edges · click a label or Enter";
+  }
+  else if(st.level === "pano"){
+    const vc = st.vcode, rooms = pvRooms(vc, scheme);
+    crumb.push("360 · " + st.room + "_" + st.n);
+    const rel = pvPanoRel(vc, scheme, st.room, st.n, st.unit);
+    if(rel){ pvCamAll(vc).then(cams => {
+      const me = cams[st.room + "_" + st.n];
+      pvPanoShow(rel, me ? me.h * Math.PI / 180 : 0);
+      pvHotspots(vc, scheme, st, cams, rooms);
+      // 4-way check badges
+      const nof = stripF(vc);
+      const hasLabel = pvLabelRooms[nof] ? pvLabelRooms[nof].has(st.room) : null;
+      const hasGlb = !!pvList(new RegExp(`^model_360-collision_property_variation/model_360-collision_${nof}_\\d+\\.glb$`)).length;
+      document.getElementById("pvHint").innerHTML =
+        `3-way: image ✅ · camera ${me ? "✅" : "❌ X3"} · label ${hasLabel === null ? "?" : hasLabel ? "✅" : "❌ X11"} · collision ${hasGlb ? "✅" : "❌ X7"} · drag to look · white discs = nearest camera per room (hover for name)`;
+      // --- precomputed scene issues (same rules as the Validator, scoped to this variation + scheme) ---
+      const sync = [];
+      for(const [r2, ns] of Object.entries(rooms)) for(const n2 of ns)
+        if(!cams[r2 + "_" + n2]) sync.push([`image ${r2}_${n2} has no camera row — unreachable in the tour`, "X3"]);
+      const badRooms = new Set();
+      for(const k2 of Object.keys(cams)){
+        const p2 = k2.lastIndexOf("_"), r2 = k2.slice(0, p2), n2 = +k2.slice(p2 + 1);
+        if(!rooms[r2] || !rooms[r2].includes(n2)) sync.push([`camera ${k2} has no 360 image in scheme ${scheme} — black sphere if navigated`, "X4"]);
+        if(!knownRoom(r2) && !badRooms.has(r2)){ badRooms.add(r2);
+          sync.push([`camera room "${esc(r2)}" is not in the dictionary — hotspot label will look wrong / not match images`, "N3"]); }
+      }
+      sync.slice(0, 8).forEach(([m2, c2]) => pvIssue(m2, "", c2));
+      if(sync.length > 8) pvIssue(`…and ${sync.length - 8} more 3-way sync issues in this variation — run the full Validator (tab 02)`);
+      if(!me) pvIssue(`current view ${st.room}_${st.n} has no camera row — hotspots and heading unavailable`, "", "X3");
+      if(!hasGlb) pvIssue("no collision model for this variation — the platform cannot do smooth GLB navigation here", "", "X7");
+      pvLabelsAll(vc).then(labels => pvDirIssues(cams, labels).forEach(i => pvIssue(i.msg, i.fix)));
+    }); } else {
+      missing.push(`image_360_property_variation/${vc}/image_360_${vc}_${scheme}_0_${st.room}_${st.n}.jpg`);
+      document.getElementById("pvWrap").style.display = "none";
+      document.getElementById("pvPano").style.display = "none";
+      document.getElementById("pvHot").style.display = "none"; window.pvOnYaw = null;
+      document.getElementById("pvEmptyTitle").textContent = `No 360 image for ${st.room}_${st.n} (scheme ${scheme})`;
+      document.getElementById("pvEmptySub").innerHTML = "expected: <code>" + esc(`image_360_${vc}_${scheme}_0_${st.room}_${st.n}.jpg`) + "</code>";
+      document.getElementById("pvEmpty").style.display = "flex";
+    }
+    pvBarChips([
+      ...Object.keys(rooms).sort().map(r => ({label:r, on:r === st.room, click:() => pvGo({level:"pano", vcode:vc, room:r, n:Math.min(...rooms[r]), unit:st.unit})})),
+      ...(rooms[st.room] || []).filter(n => n !== st.n).map(n => ({label:st.room + " " + n, click:() => pvGo({level:"pano", vcode:vc, room:st.room, n, unit:st.unit})}))
+    ]);
+    document.getElementById("pvHint").textContent = "Scene 6 · drag to look around · chips jump rooms";
+  }
+  document.getElementById("pvCrumb").textContent = ["Journey:", ...pvStack.map(s =>
+    s.level === "project" ? "Project" : s.level === "tower" ? s.tower : s.level === "floorplate" ? "F" + s.floor :
+    s.level === "unit" ? s.unit : s.level === "floorplan" ? s.vcode : s.room + "_" + s.n)].join(" → ");
+  pvMiss(missing);
+}
+function pvRooms(vc, scheme){
+  const out = {};
+  for(const k of pvList(new RegExp(`^image_360_property_variation/${vc.replace(/[+]/g,"\\+")}/image_360_.*\\.jpe?g$`, "i"))){
+    const m = new RegExp(`_(${scheme})_(\\d+)_([A-Za-z0-9]+)_(\\d+)\\.jpe?g$`).exec(k);
+    if(m) (out[m[3]] ??= []).push(+m[4]);
+  }
+  return out;
+}
+let pvCamCache = {}, pvLabelRooms = {}, pvLabelCoords = {};
+async function pvLabelsAll(vc){
+  const nof = stripF(vc);
+  if(!(nof in pvLabelCoords)){
+    pvLabelCoords[nof] = {};
+    const rel = pvList(new RegExp(`^csv_floorplan_property_variation/csv_floorplan_${nof}_\\d+\\.csv$`))[0];
+    if(rel){
+      const txt = await pvGet(rel).text();
+      for(const r of txt.split(/\r?\n/)){
+        const c = r.split(",");
+        if(c.length === 3 && !isNaN(parseFloat(c[1]))){
+          const nm = c[0].trim();
+          if(!/^layer\s*\d*$/i.test(nm)) pvLabelCoords[nof][nm] = {x:+c[1], y:+c[2]};
+        }
+      }
+    }
+  }
+  return pvLabelCoords[nof];
+}
+/* 3-way DIRECTION check: best-fit similarity (rotation+scale, with/without mirror) between camera
+   positions (cm, collision space) and floorplan label positions (px, 4096 grid). Rooms whose
+   camera position disagrees with the plan layout produce hotspots pointing the wrong way. */
+function pvDirIssues(cams, labels){
+  const pts = [];
+  for(const [room, l] of Object.entries(labels)){
+    let cam = cams[room + "_1"];
+    if(!cam){ const k = Object.keys(cams).find(k2 => k2.slice(0, k2.lastIndexOf("_")) === room); cam = k ? cams[k] : null; }
+    if(cam) pts.push({room, p:[cam.x, cam.y], q:[l.x, l.y]});
+  }
+  if(pts.length < 4) return [];   // too few common rooms for a meaningful fit
+  const fit = refl => {
+    const n = pts.length;
+    let pcx = 0, pcy = 0, qcx = 0, qcy = 0;
+    for(const t of pts){ pcx += t.p[0]; pcy += t.p[1]; qcx += t.q[0]; qcy += t.q[1]; }
+    pcx /= n; pcy /= n; qcx /= n; qcy /= n;
+    let sr = 0, si = 0, pp = 0;
+    for(const t of pts){
+      const px = t.p[0] - pcx, py = (t.p[1] - pcy) * (refl ? -1 : 1);
+      const qx = t.q[0] - qcx, qy = t.q[1] - qcy;
+      sr += qx * px + qy * py; si += qy * px - qx * py; pp += px * px + py * py;
+    }
+    if(!pp) return null;
+    const rr = sr / pp, ri = si / pp;
+    let tot = 0;
+    const res = pts.map(t => {
+      const px = t.p[0] - pcx, py = (t.p[1] - pcy) * (refl ? -1 : 1);
+      const d = Math.hypot((t.q[0] - qcx) - (rr * px - ri * py), (t.q[1] - qcy) - (rr * py + ri * px));
+      tot += d * d; return {room: t.room, d};
+    });
+    return {res, rms: Math.sqrt(tot / n)};
+  };
+  const a = fit(false), b = fit(true);
+  const best = !a ? b : !b ? a : (a.rms <= b.rms ? a : b);
+  if(!best) return [];
+  let qcx = 0, qcy = 0; for(const t of pts){ qcx += t.q[0]; qcy += t.q[1]; } qcx /= pts.length; qcy /= pts.length;
+  const spread = Math.sqrt(pts.reduce((s, t) => s + (t.q[0] - qcx) ** 2 + (t.q[1] - qcy) ** 2, 0) / pts.length) || 1;
+  if(best.rms > 0.45 * spread)
+    return [{msg: "camera positions do not correlate with the floorplan layout at all — hotspots will point in wrong directions",
+             fix: "Check that this variation's csv_camera belongs to this unit type and that posX/posY are cm in collision-model space (not a different unit's export)."}];
+  return best.res.filter(r => r.d > 0.35 * spread).map(r => ({
+    msg: `${r.room} hotspot points the wrong way — its camera position disagrees with the floorplan layout (3-way direction check)`,
+    fix: `Check csv_camera row 0_${r.room}_1 posX/posY (cm, collision space) and the ${r.room} label x,y in the floorplan CSV.`}));
+}
+async function pvCamAll(vc){ await pvCamHead(vc, "_", 0); return pvCamCache[stripF(vc)] || {}; }
+async function pvCamHead(vc, room, n){
+  const nof = stripF(vc);
+  if(!(nof in pvCamCache)){
+    const rel = pvList(new RegExp(`^csv_camera_property_variation/csv_camera_${nof}\\.csv$`))[0];
+    pvCamCache[nof] = {};
+    if(rel){
+      const txt = await pvGet(rel).text();
+      for(const r of txt.split(/\r?\n/)){
+        const c = r.split(",");
+        const m = /^(\d+)_([A-Za-z0-9]+)_(\d+)$/.exec((c[0]||"").trim());
+        if(m && c.length >= 7) pvCamCache[nof][m[2] + "_" + m[3]] = {h: parseFloat(c[5]) || 0, x: parseFloat(c[1]) || 0, y: parseFloat(c[2]) || 0, z: parseFloat(c[3]) || 0};
+      }
+    }
+  }
+  return pvCamCache[nof][room + "_" + n]?.h;
+}
+function pvPanoRel(vc, scheme, room, n, unit){
+  return pvList(new RegExp(`^image_360_property_variation/${vc.replace(/[+]/g,"\\+")}/image_360_${vc}_${scheme}_\\d+_${room}_${n}\\.jpe?g$`, "i"))[0]
+      || pvList(new RegExp(`^image_360_property_unit/[^/]+/${unit}/image_360_${unit}_.*_${room}_${n}\\.jpe?g$`, "i"))[0];
+}
+/* --- minimal WebGL equirect viewer --- */
+function pvPanoShow(rel, yaw0){
+  document.getElementById("pvWrap").style.display = "none";
+  document.getElementById("pvVideo").style.display = "none";
+  const cv = document.getElementById("pvPano");
+  const wasOn = cv.style.display === "block";
+  cv.style.display = "block";
+  if(wasOn) cv.style.opacity = "0.15";                      // fade hop (GLB-smoothed transition on the real platform)
+  const view = document.getElementById("pvView");
+  const img = new Image();
+  img.onload = () => {
+    cv.width = view.clientWidth; cv.height = view.clientHeight;   // resize only once the next pano is ready — old frame stays during load
+    const max = 4096, sc = Math.min(1, max / img.width);
+    const c2 = document.createElement("canvas"); c2.width = Math.round(img.width*sc); c2.height = Math.round(img.height*sc);
+    c2.getContext("2d").drawImage(img, 0, 0, c2.width, c2.height);
+    pvStartGl(cv, c2, yaw0 || 0);
+    requestAnimationFrame(() => { cv.style.opacity = "1"; });
+  };
+  img.src = pvSrc(rel);
+}
+function pvStartGl(cv, srcCanvas, yaw0){
+  if(pvGl && pvGl.destroy) pvGl.destroy();
+  const gl = cv.getContext("webgl", {preserveDrawingBuffer:true});
+  if(!gl){ cv.replaceWith("WebGL unavailable"); return; }
+  const vs = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+  const fs = "precision mediump float;uniform sampler2D t;uniform vec2 r;uniform float yaw,pit; " +
+    "void main(){vec2 q=(gl_FragCoord.xy/r)*2.-1.;q.x*=r.x/r.y;float f=1.1; " +
+    "vec3 d=normalize(vec3(q.x,q.y,-f)); " +
+    "float cp=cos(pit),sp=sin(pit);d=vec3(d.x,d.y*cp-d.z*sp,d.y*sp+d.z*cp); " +
+    "float cy=cos(yaw),sy=sin(yaw);d=vec3(d.x*cy+d.z*sy,d.y,-d.x*sy+d.z*cy); " +
+    "float u=0.5+atan(d.x,-d.z)/6.2831853;float v=0.5-asin(clamp(d.y,-1.,1.))/3.14159265; " +
+    "gl_FragColor=texture2D(t,vec2(u,v));}";
+  const mk = (ty, src) => { const s = gl.createShader(ty); gl.shaderSource(s, src); gl.compileShader(s); return s; };
+  const pr = gl.createProgram();
+  gl.attachShader(pr, mk(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, mk(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(pr); gl.useProgram(pr);
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, srcCanvas);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  let yaw = yaw0 || 0, pit = 0, drag = null;
+  const draw = () => {
+    if(window.pvOnYaw) window.pvOnYaw(yaw, pit);
+    gl.viewport(0, 0, cv.width, cv.height);
+    gl.uniform2f(gl.getUniformLocation(pr, "r"), cv.width, cv.height);
+    gl.uniform1f(gl.getUniformLocation(pr, "yaw"), yaw);
+    gl.uniform1f(gl.getUniformLocation(pr, "pit"), pit);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  };
+  draw();
+  cv.onmousedown = e => { drag = {x:e.clientX, y:e.clientY, yaw, pit}; cv.style.cursor = "grabbing"; };
+  const mv = e => { if(!drag) return;
+    yaw = drag.yaw + (e.clientX - drag.x) * 0.005;
+    pit = Math.max(-1.5, Math.min(1.5, drag.pit + (e.clientY - drag.y) * 0.005));
+    draw(); };
+  const up = () => { drag = null; cv.style.cursor = "grab"; };
+  document.addEventListener("mousemove", mv); document.addEventListener("mouseup", up);
+  pvGl = { destroy(){ document.removeEventListener("mousemove", mv); document.removeEventListener("mouseup", up); } };
+}
+document.getElementById("pvScheme").onchange = () => { if(pvStack.length) pvRender(pvStack[pvStack.length-1]); };
+
+/* ---- scene jump bar + amenity + pill ---- */
+function pvFirstVcode(){ return [...new Set(pvList(/^image_360_property_variation\/[^/]+\//).map(k => k.split("/")[1]))][0]
+  || [...new Set(pvList(/^backplate_image_floorplan_property_variation\//).map(k => (new RegExp(VCN).exec(k.split("/").pop())||[])[0]).filter(Boolean))][0]; }
+document.querySelectorAll('.chips[data-group="pvjump"] button').forEach(b => b.onclick = () => {
+  if(!pvFiles.size){ document.getElementById("pvInventory").innerHTML = "<p class='small' style='color:var(--err)'>Pick the deployment folder first.</p>"; return; }
+  const j = b.dataset.j;
+  const none = (title, folder) => pvGo({level:"empty", title, folder, scene:b.textContent});   // blank screen, pills keep working
+  pvStack = [];
+  if(j === "project") pvGo({level:"project"});
+  else if(j === "tower"){
+    const t = pvTowers().find(t => pvList(new RegExp(`^backplate_image_tower/${t}/`)).length) || pvTowers()[0];
+    t ? pvGo({level:"tower", tower:t}) : none("No tower assets found", "backplate_image_tower/[tower]/");
+  }
+  else if(j === "floorplate"){
+    const t = pvTowers().find(t => pvFloorsOf(t).length);
+    t ? pvGo({level:"floorplate", tower:t, floor:pvFloorsOf(t)[0]}) : none("No floorplate assets found", "backplate_image_tower-floorplate/[tower]/");
+  }
+  else if(j === "floorplan"){
+    const vc = pvFirstVcode();
+    vc ? pvGo({level:"floorplan", vcode:vc}) : none("No floorplan/variation assets found", "backplate_image_floorplan_property_variation/ · image_360_property_variation/");
+  }
+  else if(j === "pano"){
+    const vc = pvFirstVcode();
+    if(!vc) return none("No 360 assets found", "image_360_property_variation/[vcode]/");
+    const rooms = pvRooms(vc, document.getElementById("pvScheme").value || "s1");
+    const entry = rooms["Foyer"] ? "Foyer" : rooms["Entrance"] ? "Entrance" : Object.keys(rooms)[0];
+    entry ? pvGo({level:"pano", vcode:vc, room:entry, n:Math.min(...rooms[entry])}) : none("No 360 images for " + vc + " in this scheme", `image_360_property_variation/${vc}/`);
+  }
+  else if(j === "amenity"){
+    const vids = pvList(/^video_360-amenity\/.*\.(mp4|webm)$/i);
+    vids.length ? pvGo({level:"amenity", vid:vids[0]}) : none("No amenity videos found", "video_360-amenity/");
+  }
+});
+/* amenity render: hook into pvRender via wrapper */
+const pvRenderBase = pvRender;
+pvRender = function(st){
+  if(st.level === "empty"){
+    document.getElementById("pvStage").style.display = "block";
+    document.getElementById("pvOverlay").innerHTML = "";
+    document.getElementById("pvWrap").style.display = "none";
+    document.getElementById("pvPano").style.display = "none";
+    document.getElementById("pvVideo").style.display = "none";
+    document.getElementById("pvHot").style.display = "none"; window.pvOnYaw = null;
+    if(pvGl && pvGl.destroy) pvGl.destroy();
+    document.getElementById("pvEmptyTitle").textContent = st.title || "No asset found";
+    document.getElementById("pvEmptySub").innerHTML = st.folder ? "expected in: <code>" + esc(st.folder) + "</code>" : "";
+    document.getElementById("pvEmpty").style.display = "flex";
+    document.getElementById("pvBar").innerHTML = "";
+    document.getElementById("pvHint").textContent = "Use the jump pills above to move to a scene that has assets";
+    document.getElementById("pvCrumb").textContent = "Journey: → " + (st.scene || "empty scene");
+    const pill = document.getElementById("pvScenePill");
+    pill.style.display = "block"; pill.textContent = (st.scene || "") + " · no assets";
+    pvMiss(st.folder ? [st.folder] : []);
+    return;
+  }
+  if(st.level === "amenity"){
+    document.getElementById("pvStage").style.display = "block";
+    document.getElementById("pvOverlay").innerHTML = "";
+    document.getElementById("pvWrap").style.display = "none";
+    document.getElementById("pvPano").style.display = "none";
+    document.getElementById("pvEmpty").style.display = "none";
+    if(pvGl && pvGl.destroy) pvGl.destroy();
+    const v = document.getElementById("pvVideo");
+    v.style.display = "block"; v.src = pvSrc(st.vid); v.play().catch(()=>{});
+    const vids = pvList(/^video_360-amenity\/.*\.(mp4|webm)$/i);
+    pvBarChips(vids.map(x => ({label:x.split("/").pop().replace(/^video_360-amenity_|\.(mp4|webm)$/gi,""), on:x === st.vid, click:() => pvGo({level:"amenity", vid:x})})));
+    document.getElementById("pvHint").textContent = "Amenity videos · video_360-amenity/";
+    document.getElementById("pvCrumb").textContent = "Journey: → Amenity";
+    document.getElementById("pvScenePill").style.display = "block";
+    document.getElementById("pvScenePill").textContent = "Amenity · " + st.vid.split("/").pop();
+    pvMiss([]);
+    return;
+  }
+  pvRenderBase(st);
+  const names = {project:"Project hero", tower:"Tower " + (st.tower||""), floorplate:`Tower ${st.tower||""} · Floor ${st.floor||""}`,
+                 unit:"Unit " + (st.unit||""), floorplan:"Floorplan · " + (st.vcode||""), pano:(st.room||"") + " " + (st.n||"") + " · 360"};
+  const pill = document.getElementById("pvScenePill");
+  pill.style.display = "block"; pill.textContent = names[st.level] || "";
+};
+
+/* ---- pano hotspots from camera CSV ---- */
+function pvHotspots(vc, scheme, st, cams, rooms){
+  const layer = document.getElementById("pvHot");
+  layer.style.display = "block"; layer.innerHTML = "";
+  const me = cams[st.room + "_" + st.n];
+  if(!me){ window.pvOnYaw = null; return; }
+  // production style: ONE subtle floor disc per other room (nearest camera of that room), not a pill per camera
+  const best = {};                                                      // room -> {n, dist, hyaw}
+  for(const [key, c] of Object.entries(cams)){
+    if(key === st.room + "_" + st.n) continue;
+    const p = key.lastIndexOf("_"), room = key.slice(0, p), n = +key.slice(p + 1);
+    if(room === st.room) continue;                                      // same-room shots via chips, not discs
+    if(!rooms[room] || !rooms[room].includes(n)) continue;              // only cameras with images
+    const dx = c.x - me.x, dy = c.y - me.y;
+    const dist = Math.hypot(dx, dy); if(!dist) continue;
+    const hyaw = Math.PI - Math.atan2(dy, dx);                          // heading-space yaw of the target
+    if(!best[room] || dist < best[room].dist) best[room] = {n, dist, hyaw};
+  }
+  const eyeH = me.z > 20 ? me.z : 150;                                  // camera height above floor (cm) from CSV posZ
+  const spots = [];
+  for(const [room, b] of Object.entries(best)){
+    const el = document.createElement("div");
+    el.className = "pvhot";
+    el.innerHTML = '<span class="pvhotlbl"></span>';
+    el.querySelector(".pvhotlbl").textContent = room;
+    el.title = `${room}_${b.n} · ${(b.dist/100).toFixed(1)} m`;
+    el.onclick = () => pvGo({level:"pano", vcode:vc, room, n:b.n, unit:st.unit});
+    layer.appendChild(el);
+    // world direction to the FLOOR POINT under the target camera — same axes as the shader (yaw 0 looks down -z)
+    const len = Math.hypot(b.dist, eyeH);
+    const w = [-Math.sin(b.hyaw) * b.dist / len, -eyeH / len, -Math.cos(b.hyaw) * b.dist / len];
+    spots.push({el, w, dist:b.dist});
+  }
+  const cv = document.getElementById("pvPano");
+  window.pvOnYaw = (yaw, pit) => {                                      // exact inverse of the shader projection — discs stay glued to the floor
+    pit = pit || 0;
+    const a = cv.width / cv.height, f = 1.1;
+    const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pit), sp = Math.sin(pit);
+    for(const s of spots){
+      const x1 = s.w[0] * cy - s.w[2] * sy, y1 = s.w[1], z1 = s.w[0] * sy + s.w[2] * cy;   // inverse yaw
+      const y2 = y1 * cp + z1 * sp, z2 = -y1 * sp + z1 * cp;                               // inverse pitch
+      if(z2 > -0.02){ s.el.style.display = "none"; continue; }                             // behind the camera
+      const qx = f * x1 / (-z2), qy = f * y2 / (-z2);
+      const nx = qx / a;
+      if(Math.abs(nx) > 1.02 || Math.abs(qy) > 1.05){ s.el.style.display = "none"; continue; }  // outside the frame
+      s.el.style.display = "block";
+      s.el.style.left = ((nx + 1) * 50) + "%";
+      s.el.style.top = ((1 - qy) * 50) + "%";
+      const near = s.dist < 900;                                        // label only on nearby rooms to stay minimal
+      s.el.querySelector(".pvhotlbl").style.display = near ? "block" : "none";
+    }
+  };
+  window.pvOnYaw(me.h * Math.PI / 180, 0);
+}
 </script>
 </body>
 </html>
