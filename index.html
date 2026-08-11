@@ -1283,7 +1283,7 @@ function rnSuggestVcode(folder){
   return `a_s_${cfg}_${variant}`;
 }
 const rnStripF = c => c.replace(/(\d+)bf/,"$1b").replace(/(\d+)f_st/,"$1_st");
-let rnFiles = [], rnPlanRows = [], rnRoot = "";
+let rnFiles = [], rnPlanRows = [], rnRoot = "", rnSingle = false;
 document.getElementById("rnPick").onclick = () => document.getElementById("rnInput").click();
 document.getElementById("rnInput").onchange = () => {
   rnFiles = [...document.getElementById("rnInput").files].map(f => ({rel:(f.webkitRelativePath||f.name).replace(/\\/g,"/"), file:f}));
@@ -1293,13 +1293,18 @@ document.getElementById("rnInput").onchange = () => {
     const segs = f.rel.split("/");
     if(segs.length >= 3 && !/^(\.|~\$)/.test(segs[1])) (units[segs[1]] ??= []).push(f);
   }
+  rnSingle = false;
+  if(!Object.keys(units).length){                     // picked ONE unit-type folder directly — treat it as a single type
+    const fs = rnFiles.filter(f => { const s = f.rel.split("/"); return s.length === 2 && !/^(\.|~\$)/.test(s[1]); });
+    if(fs.length){ units[rnRoot] = fs; rnSingle = true; }
+  }
   const rows = Object.entries(units).map(([u,fs]) =>
     `<div style="display:flex;gap:10px;align-items:center;margin:5px 0"><code style="min-width:320px">${esc(u)}</code>
      <input class="gi rnVc" data-unit="${esc(u)}" value="${rnSuggestVcode(u)}" style="width:170px;font-family:ui-monospace,Menlo,monospace">
      <span class="small">${fs.filter(x=>/\.jpe?g$/i.test(x.rel)).length} images · ${fs.length} files</span></div>`).join("");
-  document.getElementById("rnUnitRows").innerHTML = rows || "<p class='small'>No unit subfolders found — pick the folder that CONTAINS the unit-type folders.</p>";
+  document.getElementById("rnUnitRows").innerHTML = rows || "<p class='small'>No files found — pick either the folder that CONTAINS the unit-type folders, or a single unit-type folder.</p>";
   document.getElementById("rnUnits").style.display = "block";
-  document.getElementById("rnSrcMsg").textContent = `${rnRoot} — ${rnFiles.length} files, ${Object.keys(units).length} unit types. Codes below are auto-suggested; edit before building.`;
+  document.getElementById("rnSrcMsg").textContent = `${rnRoot} — ${rnFiles.length} files, ${Object.keys(units).length} unit type${Object.keys(units).length === 1 ? "" : "s"}${rnSingle ? " (folder itself treated as one unit type)" : ""}. Codes below are auto-suggested; edit before building.`;
   document.getElementById("rnPlanWrap").style.display = "none";
 };
 function rnShift(map, wantMaster){
@@ -1321,7 +1326,9 @@ document.getElementById("rnBuild").onclick = () => {
   const vcodes = {}; document.querySelectorAll(".rnVc").forEach(i => vcodes[i.dataset.unit] = i.value.trim());
   const unmapped = new Set(); rnPlanRows = [];
   const byUnit = {};
-  for(const f of rnFiles){ const s=f.rel.split("/"); if(s.length>=3 && vcodes[s[1]]!==undefined) (byUnit[s[1]] ??= []).push(f); }
+  for(const f of rnFiles){ const s=f.rel.split("/");
+    const u = rnSingle ? (s.length === 2 ? rnRoot : null) : (s.length >= 3 ? s[1] : null);
+    if(u && vcodes[u] !== undefined) (byUnit[u] ??= []).push(f); }
   for(const [unit, fs] of Object.entries(byUnit)){
     const vc = vcodes[unit]; if(!vc) continue;
     const nf = rnStripF(vc);
@@ -1379,7 +1386,7 @@ document.getElementById("rnBuild").onclick = () => {
   const dups = rnPlanRows.filter(r=>r.dup).length;
   document.getElementById("rnPlanStats").textContent = `— ${rnPlanRows.length} files · ${unmapped.size} unmapped · ${dups} destination collisions`;
   document.getElementById("rnPlan").innerHTML = `<table><tr><th>Unit</th><th>Source</th><th>→ Deployment path</th></tr>` +
-    rnPlanRows.map(r=>`<tr${r.dup?' style="background:#FDE7E5"':''}><td class="small">${esc(r.unit)}</td><td><code>${esc(r.src.split("/").slice(2).join("/"))}</code></td><td><code>${esc(r.dst)}</code>${r.dup?' <span class="pill err">collision</span>':''}</td></tr>`).join("") + "</table>";
+    rnPlanRows.map(r=>`<tr${r.dup?' style="background:#FDE7E5"':''}><td class="small">${esc(r.unit)}</td><td><code>${esc(r.src.split("/").slice(rnSingle ? 1 : 2).join("/") || r.src)}</code></td><td><code>${esc(r.dst)}</code>${r.dup?' <span class="pill err">collision</span>':''}</td></tr>`).join("") + "</table>";
   document.getElementById("rnPlanWrap").style.display = "block";
   document.getElementById("rnExecNote").textContent = window.showDirectoryPicker ? "Copies stream directly disk-to-disk; a 30 GB set runs at drive speed. Originals are never touched." : "Direct copy needs Chrome or Edge — use the script downloads instead.";
   if(!window.showDirectoryPicker) document.getElementById("rnExec").disabled = true;
