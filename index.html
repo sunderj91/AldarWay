@@ -446,6 +446,11 @@ camera CSVs and floorplan CSVs can never drift apart. The validator (tab 02) is 
     <div id="rnUnits" style="display:none">
       <h3>Unit types found — confirm variation codes</h3>
       <div id="rnUnitRows"></div>
+      <div id="rnCatWrap" style="display:none">
+        <h3>Project &amp; tower asset folders</h3>
+        <p class="small">Category folders detected (exterior shots, floorplates, unit plans, 360s…). Confirm the target type per folder; tower / floor / orientation / time are read from each filename (e.g. <code>B2_NORTH_DAY.jpg</code>, <code>FLOORPLATE_B1_05.jpg</code>) — the fallback field is used when a filename has no tower/project token.</p>
+        <div id="rnCatRows"></div>
+      </div>
       <h3>Options</h3>
       <p class="small">
         Scheme <input class="gi" id="rnScheme" value="s1" style="width:56px"> ·
@@ -1283,7 +1288,34 @@ function rnSuggestVcode(folder){
   return `a_s_${cfg}_${variant}`;
 }
 const rnStripF = c => c.replace(/(\d+)bf/,"$1b").replace(/(\d+)f_st/,"$1_st");
-let rnFiles = [], rnPlanRows = [], rnRoot = "", rnSingle = false;
+let rnFiles = [], rnPlanRows = [], rnRoot = "", rnSingle = false, rnCats = [];
+const RN_CAT_TARGETS = {
+  tower:      "Tower exterior backplate",
+  floorplate: "Floorplate backplate",
+  unitplan:   "Unit-plan (floorplan) backplate",
+  hero:       "Project hero backplate",
+  amenity:    "Amenity 360 video",
+  unit360:    "Unit 360 images (unit + room from filename)",
+  skip:       "Skip this folder"
+};
+function rnCatOf(n){
+  n = n.toLowerCase();
+  if(/floor\s*-?_?plate/.test(n)) return "floorplate";
+  if(/unit\s*-?_?plan|floor\s*-?_?plan/.test(n)) return "unitplan";
+  if(/exterior|elevation/.test(n)) return "tower";
+  if(/hero|master\s*-?_?plan/.test(n)) return "hero";
+  if(/amenit/.test(n)) return "amenity";
+  if(/360/.test(n)) return "unit360";
+  return null;
+}
+function rnTailRoom(base){   // find a dictionary room in the trailing tokens of a filename
+  const parts = base.split(/[_\-\s]+/).filter(Boolean);
+  for(let i = 0; i < parts.length; i++){
+    const pr = rnParse(parts.slice(i).join("_"));
+    if(pr && pr[0]) return pr;
+  }
+  return [null, 0, base];
+}
 document.getElementById("rnPick").onclick = () => document.getElementById("rnInput").click();
 document.getElementById("rnInput").onchange = () => {
   rnFiles = [...document.getElementById("rnInput").files].map(f => ({rel:(f.webkitRelativePath||f.name).replace(/\\/g,"/"), file:f}));
@@ -1293,8 +1325,14 @@ document.getElementById("rnInput").onchange = () => {
     const segs = f.rel.split("/");
     if(segs.length >= 3 && !/^(\.|~\$)/.test(segs[1])) (units[segs[1]] ??= []).push(f);
   }
+  // split category folders (exterior / floorplate / unit plan / 360 / hero / amenity) out of the unit-type list
+  rnCats = [];
+  for(const u of Object.keys(units)){
+    const cat = rnCatOf(u);
+    if(cat){ rnCats.push({folder:u, files:units[u], def:cat}); delete units[u]; }
+  }
   rnSingle = false;
-  if(!Object.keys(units).length){                     // picked ONE unit-type folder directly — treat it as a single type
+  if(!Object.keys(units).length && !rnCats.length){   // picked ONE unit-type folder directly — treat it as a single type
     const fs = rnFiles.filter(f => { const s = f.rel.split("/"); return s.length === 2 && !/^(\.|~\$)/.test(s[1]); });
     if(fs.length){ units[rnRoot] = fs; rnSingle = true; }
   }
@@ -1302,9 +1340,15 @@ document.getElementById("rnInput").onchange = () => {
     `<div style="display:flex;gap:10px;align-items:center;margin:5px 0"><code style="min-width:320px">${esc(u)}</code>
      <input class="gi rnVc" data-unit="${esc(u)}" value="${rnSuggestVcode(u)}" style="width:170px;font-family:ui-monospace,Menlo,monospace">
      <span class="small">${fs.filter(x=>/\.jpe?g$/i.test(x.rel)).length} images · ${fs.length} files</span></div>`).join("");
-  document.getElementById("rnUnitRows").innerHTML = rows || "<p class='small'>No files found — pick either the folder that CONTAINS the unit-type folders, or a single unit-type folder.</p>";
+  document.getElementById("rnUnitRows").innerHTML = rows || (rnCats.length ? "" : "<p class='small'>No files found — pick either the folder that CONTAINS the unit-type folders, or a single unit-type folder.</p>");
+  document.getElementById("rnCatRows").innerHTML = rnCats.map((c, i) =>
+    `<div style="display:flex;gap:10px;align-items:center;margin:5px 0;flex-wrap:wrap"><code style="min-width:220px">${esc(c.folder)}</code>
+     <select class="gi rnCatSel" data-i="${i}">${Object.entries(RN_CAT_TARGETS).map(([k,v]) => `<option value="${k}"${k === c.def ? " selected" : ""}>${v}</option>`).join("")}</select>
+     <input class="gi rnCatHint" data-i="${i}" placeholder="fallback tower / project id" style="width:160px">
+     <span class="small">${c.files.length} files</span></div>`).join("");
+  document.getElementById("rnCatWrap").style.display = rnCats.length ? "block" : "none";
   document.getElementById("rnUnits").style.display = "block";
-  document.getElementById("rnSrcMsg").textContent = `${rnRoot} — ${rnFiles.length} files, ${Object.keys(units).length} unit type${Object.keys(units).length === 1 ? "" : "s"}${rnSingle ? " (folder itself treated as one unit type)" : ""}. Codes below are auto-suggested; edit before building.`;
+  document.getElementById("rnSrcMsg").textContent = `${rnRoot} — ${rnFiles.length} files, ${Object.keys(units).length} unit type${Object.keys(units).length === 1 ? "" : "s"}${rnCats.length ? `, ${rnCats.length} asset categor${rnCats.length === 1 ? "y" : "ies"}` : ""}${rnSingle ? " (folder itself treated as one unit type)" : ""}. Codes below are auto-suggested; edit before building.`;
   document.getElementById("rnPlanWrap").style.display = "none";
 };
 function rnShift(map, wantMaster){
@@ -1371,6 +1415,48 @@ document.getElementById("rnBuild").onclick = () => {
     if(labelCsv) rnPlanRows.push({unit, src:labelCsv.rel, file:labelCsv.file, dst:`csv_floorplan_property_variation/csv_floorplan_${nf}_${floor}.csv`, kind:"fpcsv", meta:{shift, dropLayer, floor, strict}});
     if(camCsv) rnPlanRows.push({unit, src:camCsv.rel, file:camCsv.file, dst:`csv_camera_property_variation/csv_camera_${nf}.csv`, kind:"camcsv", meta:{shift, floor, strict}});
     if(camXlsx && !camCsv) rnPlanRows.push({unit, src:camXlsx.rel, file:camXlsx.file, dst:`csv_camera_property_variation/csv_camera_${nf}.csv`, kind:"camxlsx", meta:{shift, floor, strict}});
+  }
+  // category folders → project & tower assets
+  for(let ci = 0; ci < rnCats.length; ci++){
+    const cat = rnCats[ci];
+    const target = document.querySelector(`.rnCatSel[data-i="${ci}"]`)?.value || cat.def;
+    const hint = (document.querySelector(`.rnCatHint[data-i="${ci}"]`)?.value || "").trim().toLowerCase();
+    if(target === "skip") continue;
+    for(const f of cat.files){
+      const name = f.rel.split("/").pop();
+      if(/^(\.|~\$)/.test(name) || /^(thumbs\.db|desktop\.ini)$/i.test(name)) continue;
+      const base = name.replace(/\.[^.]+$/,""), ext = (name.split(".").pop() || "").toLowerCase();
+      const tower = ((/(?:^|[_\-\s])([a-z]\d{1,2})(?=[_\-\s.]|$)/i.exec(base) || [])[1] || hint || "b1").toLowerCase();
+      const orient = ((/(north|south|east|west)/i.exec(base) || [])[1] || "north").toLowerCase();
+      const time = ((/(day|night|dusk|dawn)/i.exec(base) || [])[1] || "day").toLowerCase();
+      let dst = null;
+      if(target === "tower"){
+        if(!/^(webp|jpe?g|png)$/.test(ext)) continue;
+        dst = `backplate_image_tower/${tower}/backplate_image_tower_${tower}_${orient}_${time}.${ext === "webp" ? "webp" : "jpg"}`;
+      } else if(target === "floorplate"){
+        if(!/^(webp|jpe?g|png)$/.test(ext)) continue;
+        const flr2 = (/(?:^|[_\-\s])(\d{1,3})(?:[_\-\s]|$)/.exec(base.replace(new RegExp("(^|[_\\-\\s])" + tower + "(?=[_\\-\\s.]|$)", "i"), "$1")) || [])[1];
+        if(!flr2){ unmapped.add(base + " (no floor number found)"); continue; }
+        dst = `backplate_image_tower-floorplate/${tower}/backplate_image_tower-floorplate_${tower}_${flr2}.${ext === "webp" ? "webp" : "jpg"}`;
+      } else if(target === "unitplan"){
+        if(!/^(webp|jpe?g|png)$/.test(ext)) continue;
+        const nf2 = rnStripF(rnSuggestVcode(base));
+        dst = `backplate_image_floorplan_property_variation/backplate_image_floorplan_${nf2}_${scheme}_${floor}.${ext === "webp" ? "webp" : "jpg"}`;
+      } else if(target === "hero"){
+        if(!/^(webp|jpe?g|png)$/.test(ext)) continue;
+        dst = `backplate_image_project/backplate_image_${(hint || "project").replace(/[^a-z0-9-]+/g, "-")}_${orient}_${time}.${ext === "webp" ? "webp" : "jpg"}`;
+      } else if(target === "amenity"){
+        if(!/^(mp4|webm)$/.test(ext)) continue;
+        dst = `video_360-amenity/video_360-amenity_${base.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.${ext}`;
+      } else if(target === "unit360"){
+        if(!/^jpe?g$/.test(ext)) continue;
+        const [room2, idx2] = rnTailRoom(base);
+        if(!room2){ unmapped.add(base + " (no dictionary room in name)"); continue; }
+        const vc2 = rnSuggestVcode(base);
+        dst = `image_360_property_variation/${vc2}/image_360_${vc2}_${scheme}_${floor}_${room2}_${idx2}.jpg`;
+      }
+      if(dst) rnPlanRows.push({unit:cat.folder, src:f.rel, file:f.file, dst, kind:"asset"});
+    }
   }
   // unmapped UI
   const um = document.getElementById("rnUnmapped");
